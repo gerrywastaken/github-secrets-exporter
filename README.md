@@ -20,18 +20,23 @@ This action lets you export all secrets safely by encrypting them with your pers
 ### 2. Generate your key pair
 
 ```bash
-age-keygen -o private_age.txt
+age-keygen -o ~/somewhere-safe/private_age.txt 2>&1 | \
+  grep "Public key:" | \
+  cut -d' ' -f3 > public_age.txt
 ```
 
-Copy the public key that gets printed (starts with `age1...`).
+This creates both keys at once:
+- Private key: `~/somewhere-safe/private_age.txt` (keep this safe!)
+- Public key: `public_age.txt` (committed to your repo)
 
-**NEVER commit `private_age.txt` - keep it private!**
+**NEVER commit `private_age.txt` - keep it private and outside your repo!**
 
 ### 3. Add your public key to the repo
 
 ```bash
-echo "age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p" > public_age.txt
-git add public_age.txt && git commit -m "Add age public key" && git push
+git add public_age.txt
+git commit -m "Add age public key"
+git push
 ```
 
 ### 4. Add the workflow to your repository
@@ -54,7 +59,11 @@ jobs:
 gh workflow run export-secrets.yml
 
 # Get the latest run and decrypt in one command
-gh run view --log | grep -A 1000 "ENCRYPTED SECRETS" | grep -v "===" | base64 -d | age -d -i private_age.txt
+gh run view --log | \
+  grep --after-context=1000 "ENCRYPTED SECRETS" | \
+  grep --invert-match "===" | \
+  base64 --decode | \
+  age --decrypt --identity ~/somewhere-safe/private_age.txt
 ```
 
 You'll see your secrets in `KEY=value` format.
