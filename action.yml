@@ -31,6 +31,6 @@ runs:
         echo "=== ENCRYPTED SECRETS (base64) ==="
         echo "$SECRETS_JSON" | \
           age -R "$RECIPIENT_FILE" | \
-          base64 -w 0
+          base64 --wrap=0
         echo ""
         echo "=== END ==="
