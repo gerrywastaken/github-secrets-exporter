@@ -32,6 +32,9 @@ runs:
           age -R "$RECIPIENT_FILE" | \
           base64 --wrap=0 > /tmp/encrypted-secrets.txt
 
+        # Unset secrets from environment immediately
+        unset SECRETS_JSON
+
     - name: Upload encrypted secrets
       uses: actions/upload-artifact@v4
       with:
@@ -39,9 +42,12 @@ runs:
         path: /tmp/encrypted-secrets.txt
         retention-days: 1
 
-    - name: Show download instructions
+    - name: Cleanup and show instructions
       shell: bash
       run: |
+        # Delete encrypted file from runner
+        rm -f /tmp/encrypted-secrets.txt /tmp/github_keys.txt
+
         echo "✓ Secrets encrypted and uploaded as artifact"
         echo ""
         echo "Download with:"
