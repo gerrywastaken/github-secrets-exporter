@@ -16,16 +16,15 @@ runs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Install tools
+    - name: Install age
       shell: bash
-      run: sudo apt-get update && sudo apt-get install -y age jq
+      run: sudo apt-get update && sudo apt-get install -y age
 
     - name: Export and encrypt all secrets
       shell: bash
       run: |
         echo "=== ENCRYPTED SECRETS (base64) ==="
         echo "$SECRETS_JSON" | \
-          jq -r 'to_entries[] | "\(.key)=\(.value)"' | \
           age -R "${{ inputs.public_key_path }}" | \
           base64 -w 0
         echo ""
