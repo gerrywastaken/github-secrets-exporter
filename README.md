@@ -13,18 +13,6 @@ GitHub Actions secrets are write-only by design. You can't read them through the
 
 This action lets you export all secrets safely by encrypting them with your personal key.
 
-## Security Best Practice
-
-The code is intentionally simple (~35 lines) so you can audit it yourself.
-
-**Recommended:** Fork this repo and use your own fork
-1. Fork this repository to your own account
-2. Review the code (it's short!)
-3. Use `your-username/github-secrets-exporter@main`
-4. You control the code and verify no malicious updates occur
-
-**Alternative:** Use our repo directly with `gerrywastaken/github-secrets-exporter@main` (simpler, but requires trusting us)
-
 ## Quick Start
 
 ### 1. [Install age](https://github.com/FiloSottile/age#installation)
@@ -40,15 +28,9 @@ jobs:
   export:
     runs-on: ubuntu-latest
     steps:
-      # Option 1 (recommended): Use your fork
-      - uses: your-username/github-secrets-exporter@main
+      - uses: gerrywastaken/github-secrets-exporter@main
         env:
           SECRETS_JSON: ${{ toJSON(secrets) }}
-
-      # Option 2: Use our repo directly
-      # - uses: gerrywastaken/github-secrets-exporter@main
-      #   env:
-      #     SECRETS_JSON: ${{ toJSON(secrets) }}
 ```
 
 ### 3. Run and decrypt
@@ -69,7 +51,18 @@ gh run view --log | \
 
 You'll see your secrets in JSON format.
 
-## Alternative: Use Age Keys Instead of SSH
+## Advanced Options
+
+### Fork for Maximum Security (Recommended)
+
+The code is intentionally simple (~36 lines) so you can audit it yourself:
+
+1. Fork this repository to your own account
+2. Review the code (it's short!)
+3. Use `your-username/github-secrets-exporter@main` in your workflow
+4. You control the code and verify no malicious updates occur
+
+### Use Age Keys Instead of SSH
 
 If you don't have GitHub SSH keys or prefer age keys:
 
@@ -89,7 +82,7 @@ git push
 
 3. Update your workflow to specify the key path:
 ```yaml
-- uses: your-username/github-secrets-exporter@main
+- uses: gerrywastaken/github-secrets-exporter@main
   env:
     SECRETS_JSON: ${{ toJSON(secrets) }}
   with:
