@@ -15,17 +15,7 @@ This action lets you export all secrets safely by encrypting them with your pers
 
 ## Quick Start
 
-### 1. Install age
-
-**macOS:**
-```bash
-brew install age
-```
-
-**Linux:**
-```bash
-sudo apt-get install age
-```
+### 1. [Install age](https://github.com/FiloSottile/age#installation)
 
 ### 2. Generate your key pair
 
@@ -33,43 +23,38 @@ sudo apt-get install age
 age-keygen -o private_age.txt
 ```
 
-This outputs:
-```
-Public key: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
-```
+Copy the public key that gets printed (starts with `age1...`).
 
-**Keep `private_age.txt` safe and private!** Never commit it.
+**NEVER commit `private_age.txt` - keep it private!**
 
 ### 3. Add your public key to the repo
 
 ```bash
-mkdir -p .github/data
-echo "age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p" > .github/data/public_age.txt
-git add .github/data/public_age.txt
-git commit -m "Add age public key for secret export"
-git push
+echo "age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p" > public_age.txt
+git add public_age.txt && git commit -m "Add age public key" && git push
 ```
 
-### 4. Add the workflow
+### 4. Add the workflow to your repository
 
-Copy `.github/workflows/export-secrets.yml` to your target repository.
+```yaml
+# .github/workflows/export-secrets.yml
+name: Export Secrets
+on: workflow_dispatch
 
-### 5. Run the workflow
-
-Go to Actions → "Export Secrets (Encrypted)" → Run workflow
-
-### 6. Get the encrypted output
-
-```bash
-gh run view --log | grep -A 1000 "ENCRYPTED SECRETS"
+jobs:
+  export:
+    uses: gerrywastaken/github-secrets-exporter/.github/workflows/export-secrets.yml@main
+    secrets: inherit
 ```
 
-Copy the long base64 string.
-
-### 7. Decrypt locally
+### 5. Run and decrypt
 
 ```bash
-echo "PASTE_BASE64_HERE" | base64 -d | age -d -i private_age.txt
+# Trigger the workflow
+gh workflow run export-secrets.yml
+
+# Get the latest run and decrypt in one command
+gh run view --log | grep -A 1000 "ENCRYPTED SECRETS" | grep -v "===" | base64 -d | age -d -i private_age.txt
 ```
 
 You'll see your secrets in `KEY=value` format.
