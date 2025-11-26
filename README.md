@@ -19,7 +19,19 @@ This action lets you export all secrets safely by encrypting them with your pers
 
 ### 1. [Install age](https://github.com/FiloSottile/age#installation)
 
-### 2. Add the workflow to your repository
+### 2. Get your public key
+
+```bash
+# If you have an SSH key, get it from GitHub
+curl https://github.com/YOUR_USERNAME.keys
+
+# Or generate a new age key
+age-keygen
+```
+
+Copy your public key (starts with `age1...` or `ssh-ed25519` or `ssh-rsa`).
+
+### 3. Add the workflow to your repository
 
 ```yaml
 # .github/workflows/export-secrets.yml
@@ -34,9 +46,13 @@ jobs:
       - uses: gerrywastaken/github-secrets-exporter@main
         env:
           SECRETS_JSON: ${{ toJSON(secrets) }}
+        with:
+          public_encryption_key: 'age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p'
 ```
 
-### 3. Run and decrypt
+Replace with your actual public key. It's public, so it's safe to commit!
+
+### 4. Run and decrypt
 
 ```bash
 # Trigger the workflow
@@ -51,11 +67,12 @@ cat encrypted-secrets.txt | \
   age --decrypt --identity ~/.ssh/id_ed25519
 ```
 
-**Multiple SSH keys?** If you have multiple SSH keys on GitHub, the action encrypts for all of them. Try each of your private keys (`~/.ssh/id_ed25519`, `~/.ssh/id_rsa`, etc.) until one works.
-
 You'll see your secrets in JSON format.
 
-> **Security:** Encrypted secrets are stored as a workflow artifact with 1-day retention (not in logs). This minimizes risk if your SSH key is compromised in the future.
+> **Security:**
+> - Your public key is inline in the workflow (visible, auditable)
+> - Encrypted secrets stored as artifact with 1-day retention (not logs)
+> - For maximum security: fork and audit the code yourself (see ADVANCED.md)
 
 ---
 

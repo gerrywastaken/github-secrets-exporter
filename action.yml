@@ -5,10 +5,9 @@ branding:
   color: 'blue'
 
 inputs:
-  public_key_path:
-    description: 'Path to age public key file (default: uses your GitHub SSH keys)'
-    required: false
-    default: ''
+  public_encryption_key:
+    description: 'Your public encryption key (age or SSH format)'
+    required: true
 
 runs:
   using: 'composite'
@@ -20,19 +19,15 @@ runs:
     - name: Export and encrypt all secrets
       shell: bash
       run: |
-        # Use age key if specified, otherwise use GitHub SSH keys
-        if [ -n "${{ inputs.public_key_path }}" ]; then
-          RECIPIENT_FILE="${{ inputs.public_key_path }}"
-        else
-          curl -sf "https://github.com/${{ github.actor }}.keys" > /tmp/github_keys.txt
-          RECIPIENT_FILE=/tmp/github_keys.txt
-        fi
+        # Write public key to temp file
+        echo "${{ inputs.public_encryption_key }}" > /tmp/public_key.txt
 
         echo "$SECRETS_JSON" | \
-          age -R "$RECIPIENT_FILE" | \
+          age -R /tmp/public_key.txt | \
           base64 --wrap=0 > /tmp/encrypted-secrets.txt
 
-        # Unset secrets from environment immediately
+        # Cleanup immediately
+        rm -f /tmp/public_key.txt
         unset SECRETS_JSON
 
     - name: Upload encrypted secrets
@@ -46,7 +41,7 @@ runs:
       shell: bash
       run: |
         # Delete encrypted file from runner
-        rm -f /tmp/encrypted-secrets.txt /tmp/github_keys.txt
+        rm -f /tmp/encrypted-secrets.txt
 
         echo "✓ Secrets encrypted and uploaded as artifact"
         echo ""

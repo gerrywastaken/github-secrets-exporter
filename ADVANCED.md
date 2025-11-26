@@ -2,7 +2,7 @@
 
 ## Fork for Maximum Security (Recommended)
 
-The code is intentionally simple (~36 lines) so you can audit it yourself:
+The code is intentionally simple (~40 lines) so you can audit it yourself:
 
 1. Fork this repository to your own account
 2. Review the code (it's short!)
@@ -11,88 +11,70 @@ The code is intentionally simple (~36 lines) so you can audit it yourself:
 
 This way you're not trusting us - you're trusting code you've personally reviewed.
 
-## Use Age Keys Instead of SSH
+## Using Different Key Types
 
-If you don't have GitHub SSH keys or prefer age keys:
+### SSH Keys
 
-### 1. Generate an age keypair
-
-```bash
-age-keygen -o ~/private_age.txt 2>&1 | \
-  grep "Public key:" | \
-  cut -d' ' -f3 > public_age.txt
-```
-
-This creates:
-- Private key: `~/private_age.txt` (keep this safe!)
-- Public key: `public_age.txt` (will be committed to your repo)
-
-**NEVER commit `private_age.txt` - keep it private and outside your repo!**
-
-### 2. Commit the public key
+If you already have an SSH key on GitHub:
 
 ```bash
-git add public_age.txt
-git commit -m "Add age public key"
-git push
+# Get your public key
+curl https://github.com/YOUR_USERNAME.keys
 ```
 
-### 3. Update your workflow
-
+Use it in your workflow:
 ```yaml
-# .github/workflows/export-secrets.yml
-name: Export Secrets
-on: workflow_dispatch
-
-jobs:
-  export:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: gerrywastaken/github-secrets-exporter@main
-        env:
-          SECRETS_JSON: ${{ toJSON(secrets) }}
-        with:
-          public_key_path: 'public_age.txt'
+with:
+  public_encryption_key: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKw...'
 ```
 
-### 4. Decrypt with your age key
+Decrypt with:
+```bash
+age --decrypt --identity ~/.ssh/id_ed25519
+```
+
+### Age Keys
+
+Generate a dedicated age key:
 
 ```bash
-# Download the artifact
-gh run download --name encrypted-secrets
+age-keygen -o ~/private_age.txt
+```
 
-# Decrypt
-cat encrypted-secrets.txt | \
-  base64 --decode | \
-  age --decrypt --identity ~/private_age.txt
+This outputs:
+```
+Public key: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
+```
+
+Use it in your workflow:
+```yaml
+with:
+  public_encryption_key: 'age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p'
+```
+
+Decrypt with:
+```bash
+age --decrypt --identity ~/private_age.txt
 ```
 
 ## How It Works
 
-### Default (SSH Keys)
-
-1. Workflow fetches your GitHub SSH public keys from `https://github.com/USERNAME.keys`
-2. Exports all secrets as JSON
-3. Encrypts with your SSH public keys using `age`
+1. You provide your public encryption key inline in the workflow file
+2. Workflow exports all secrets as JSON
+3. Encrypts with your public key using `age`
 4. Uploads encrypted data as workflow artifact (1-day retention)
-5. **You download artifact and decrypt locally with your SSH private key**
-
-### With Age Keys
-
-1. Workflow checks out your repo to access `public_age.txt`
-2. Exports all secrets as JSON
-3. Encrypts with your age public key
-4. Uploads encrypted data as workflow artifact (1-day retention)
-5. **You download artifact and decrypt locally with your age private key**
+5. **You download artifact and decrypt locally with your private key**
 
 ### Security Details
 
+- **Public key is inline** in your workflow file (visible, auditable)
 - **Secrets only exist in memory** during the workflow - they never touch disk
 - **Encrypted output stored as artifact** (not logs) with 1-day retention
 - Artifacts can be deleted manually for extra security
-- Even if someone steals your SSH key years later, artifact is already deleted
-- The workflow is simple enough (~40 lines) to audit yourself
+- Even if someone steals your private key years later, artifact is already deleted
+- The action code is simple enough (~40 lines) to audit yourself
 - Uses asymmetric encryption (public/private keys, not passwords)
+- **Best practice**: Fork and audit the code before using
 
 ## Security Notes
 
@@ -138,18 +120,12 @@ Or delete via the GitHub UI: Actions → Workflow run → Artifacts section → 
 
 ## Troubleshooting
 
-### "No such file or directory: /tmp/github_keys.txt"
+### "no identity matched any of the recipients" or "Failed to decrypt"
 
-You don't have any SSH keys on your GitHub account. Either:
-1. Add SSH keys to GitHub (Settings → SSH and GPG keys)
-2. Use age keys instead (see "Use Age Keys Instead of SSH" above)
+The private key you're using doesn't match the public key used for encryption.
 
-### "no identity matched any of the recipients"
-
-The SSH private key you're using doesn't match any of the public keys used for encryption. Try:
-1. Different SSH keys: `~/.ssh/id_rsa`, `~/.ssh/id_ecdsa`, etc.
-2. Check which keys are on your GitHub: `curl https://github.com/YOUR_USERNAME.keys`
-
-### "Failed to decrypt"
-
-Make sure you're using the correct private key that corresponds to the public key used for encryption.
+Solutions:
+1. Check which public key is in your workflow file (look at `public_encryption_key`)
+2. If using SSH key: try different keys (`~/.ssh/id_ed25519`, `~/.ssh/id_rsa`, `~/.ssh/id_ecdsa`)
+3. If using age key: make sure you're using the correct `private_age.txt` file
+4. Verify the public key hasn't changed since the workflow ran
