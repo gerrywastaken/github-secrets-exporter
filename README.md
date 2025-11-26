@@ -15,14 +15,15 @@ This action lets you export all secrets safely by encrypting them with your pers
 
 ## Security Best Practice
 
-**We recommend forking this repo and using your own fork.**
+The code is intentionally simple (~35 lines) so you can audit it yourself.
 
-The code is intentionally simple (~35 lines) so you can audit it yourself. After reviewing:
+**Recommended:** Fork this repo and use your own fork
 1. Fork this repository to your own account
-2. Use `your-username/github-secrets-exporter@main` instead
-3. You control the code and can verify no malicious updates occur
+2. Review the code (it's short!)
+3. Use `your-username/github-secrets-exporter@main`
+4. You control the code and verify no malicious updates occur
 
-This way you're not trusting us - you're trusting code you've personally reviewed.
+**Alternative:** Use our repo directly with `gerrywastaken/github-secrets-exporter@main` (simpler, but requires trusting us)
 
 ## Quick Start
 
@@ -61,9 +62,15 @@ jobs:
   export:
     runs-on: ubuntu-latest
     steps:
-      - uses: your-username/github-secrets-exporter@main  # Use your fork!
+      # Option 1 (recommended): Use your fork
+      - uses: your-username/github-secrets-exporter@main
         env:
           SECRETS_JSON: ${{ toJSON(secrets) }}
+
+      # Option 2: Use our repo directly
+      # - uses: gerrywastaken/github-secrets-exporter@main
+      #   env:
+      #     SECRETS_JSON: ${{ toJSON(secrets) }}
 ```
 
 ### 5. Run and decrypt
