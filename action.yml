@@ -5,17 +5,18 @@ branding:
   color: 'blue'
 
 inputs:
-  public_key_path:
-    description: 'Path to age public key file'
+  github_username:
+    description: 'GitHub username to fetch SSH keys from (default: workflow actor)'
     required: false
-    default: 'public_age.txt'
+    default: ''
+  public_key_path:
+    description: 'Optional: Path to age public key file (fallback if SSH keys unavailable)'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
     - name: Install age
       shell: bash
       run: sudo apt-get update && sudo apt-get install -y age
@@ -23,9 +24,28 @@ runs:
     - name: Export and encrypt all secrets
       shell: bash
       run: |
+        # Determine which username to use
+        USERNAME="${{ inputs.github_username }}"
+        if [ -z "$USERNAME" ]; then
+          USERNAME="${{ github.actor }}"
+        fi
+
+        # Try to fetch GitHub SSH keys
+        echo "Fetching SSH keys for $USERNAME..."
+        if curl -sf "https://github.com/$USERNAME.keys" > /tmp/github_keys.txt && [ -s /tmp/github_keys.txt ]; then
+          echo "Using GitHub SSH keys for encryption"
+          RECIPIENT_FILE=/tmp/github_keys.txt
+        elif [ -n "${{ inputs.public_key_path }}" ]; then
+          echo "Using age public key from ${{ inputs.public_key_path }}"
+          RECIPIENT_FILE="${{ inputs.public_key_path }}"
+        else
+          echo "ERROR: No public keys found (no GitHub SSH keys and no age key specified)"
+          exit 1
+        fi
+
         echo "=== ENCRYPTED SECRETS (base64) ==="
         echo "$SECRETS_JSON" | \
-          age -R "${{ inputs.public_key_path }}" | \
+          age -R "$RECIPIENT_FILE" | \
           base64 -w 0
         echo ""
         echo "=== END ==="
