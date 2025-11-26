@@ -87,15 +87,14 @@ gh run view --log | \
   age --decrypt --identity ~/private_age.txt
 ```
 
-You'll see your secrets in `KEY=value` format.
+You'll see your secrets in JSON format.
 
 ## How It Works
 
 1. Workflow exports all secrets as JSON
-2. Converts to `KEY=value` format
-3. Encrypts with your public key using `age`
-4. Outputs base64-encoded ciphertext to logs
-5. **You decrypt locally with your private key**
+2. Encrypts with your public key using `age`
+3. Outputs base64-encoded ciphertext to logs
+4. **You decrypt locally with your private key**
 
 The secrets are only in memory during the workflow - they never touch disk. Even if GitHub's logs leak, nobody can decrypt without your private key.
 
@@ -105,15 +104,17 @@ The secrets are only in memory during the workflow - they never touch disk. Even
 - **Private key never leaves your machine**
 - **Encrypted logs are safe** - only you can decrypt
 - **Secrets only exist in memory** during the workflow run
-- Simple, auditable code (~35 lines)
+- Simple, auditable code (~30 lines)
 
 ## Example Output
 
 After decryption, you'll see:
-```
-NPM_TOKEN=npm_abc123...
-AWS_ACCESS_KEY_ID=AKIA...
-DATABASE_URL=postgresql://...
+```json
+{
+  "NPM_TOKEN": "npm_abc123...",
+  "AWS_ACCESS_KEY_ID": "AKIA...",
+  "DATABASE_URL": "postgresql://..."
+}
 ```
 
 ## License
