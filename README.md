@@ -13,6 +13,17 @@ GitHub Actions secrets are write-only by design. You can't read them through the
 
 This action lets you export all secrets safely by encrypting them with your personal key.
 
+## Security Best Practice
+
+**We recommend forking this repo and using your own fork.**
+
+The code is intentionally simple (~35 lines) so you can audit it yourself. After reviewing:
+1. Fork this repository to your own account
+2. Use `your-username/github-secrets-exporter@main` instead
+3. You control the code and can verify no malicious updates occur
+
+This way you're not trusting us - you're trusting code you've personally reviewed.
+
 ## Quick Start
 
 ### 1. [Install age](https://github.com/FiloSottile/age#installation)
@@ -50,7 +61,7 @@ jobs:
   export:
     runs-on: ubuntu-latest
     steps:
-      - uses: gerrywastaken/github-secrets-exporter@main
+      - uses: your-username/github-secrets-exporter@main  # Use your fork!
         env:
           SECRETS_JSON: ${{ toJSON(secrets) }}
 ```
