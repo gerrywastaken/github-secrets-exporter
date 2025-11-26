@@ -1,0 +1,32 @@
+name: 'GitHub Secrets Exporter'
+description: 'Securely export repository secrets encrypted with age'
+branding:
+  icon: 'lock'
+  color: 'blue'
+
+inputs:
+  public_key_path:
+    description: 'Path to age public key file'
+    required: false
+    default: 'public_age.txt'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install tools
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y age jq
+
+    - name: Export and encrypt all secrets
+      shell: bash
+      run: |
+        echo "=== ENCRYPTED SECRETS (base64) ==="
+        echo "$SECRETS_JSON" | \
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' | \
+          age -R "${{ inputs.public_key_path }}" | \
+          base64 -w 0
+        echo ""
+        echo "=== END ==="

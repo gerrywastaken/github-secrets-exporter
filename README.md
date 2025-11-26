@@ -20,13 +20,13 @@ This action lets you export all secrets safely by encrypting them with your pers
 ### 2. Generate your key pair
 
 ```bash
-age-keygen -o ~/somewhere-safe/private_age.txt 2>&1 | \
+age-keygen -o ~/private_age.txt 2>&1 | \
   grep "Public key:" | \
   cut -d' ' -f3 > public_age.txt
 ```
 
 This creates both keys at once:
-- Private key: `~/somewhere-safe/private_age.txt` (keep this safe!)
+- Private key: `~/private_age.txt` (keep this safe!)
 - Public key: `public_age.txt` (committed to your repo)
 
 **NEVER commit `private_age.txt` - keep it private and outside your repo!**
@@ -48,8 +48,11 @@ on: workflow_dispatch
 
 jobs:
   export:
-    uses: gerrywastaken/github-secrets-exporter/.github/workflows/export-secrets.yml@main
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: gerrywastaken/github-secrets-exporter@main
+        env:
+          SECRETS_JSON: ${{ toJSON(secrets) }}
 ```
 
 ### 5. Run and decrypt
@@ -63,7 +66,7 @@ gh run view --log | \
   grep --after-context=1000 "ENCRYPTED SECRETS" | \
   grep --invert-match "===" | \
   base64 --decode | \
-  age --decrypt --identity ~/somewhere-safe/private_age.txt
+  age --decrypt --identity ~/private_age.txt
 ```
 
 You'll see your secrets in `KEY=value` format.
