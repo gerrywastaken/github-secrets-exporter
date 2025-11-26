@@ -52,7 +52,7 @@ jobs:
 
 Replace with your actual public key. It's public, so it's safe to commit!
 
-### 4. Run, decrypt, and cleanup
+### 4. Run and decrypt
 
 ```bash
 # Trigger the workflow
@@ -65,13 +65,11 @@ gh run download --name encrypted-secrets
 cat encrypted-secrets.txt | \
   base64 --decode | \
   age --decrypt --identity ~/.ssh/id_ed25519
-
-# Delete the artifact from GitHub (recommended)
-gh run list --workflow=export-secrets.yml --limit=1 --json databaseId --jq '.[0].databaseId' | \
-  xargs -I {} gh run delete {}
 ```
 
 You'll see your secrets in JSON format.
+
+**Optional cleanup:** Artifact auto-deletes in 1 day. To delete immediately, go to: Actions → [Your run] → Delete artifact
 
 > **Security:**
 > - Your public key is inline in the workflow (visible, auditable)
