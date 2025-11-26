@@ -5,12 +5,8 @@ branding:
   color: 'blue'
 
 inputs:
-  github_username:
-    description: 'GitHub username to fetch SSH keys from (default: workflow actor)'
-    required: false
-    default: ''
   public_key_path:
-    description: 'Optional: Path to age public key file (fallback if SSH keys unavailable)'
+    description: 'Path to age public key file (default: uses your GitHub SSH keys)'
     required: false
     default: ''
 
@@ -24,23 +20,12 @@ runs:
     - name: Export and encrypt all secrets
       shell: bash
       run: |
-        # Determine which username to use
-        USERNAME="${{ inputs.github_username }}"
-        if [ -z "$USERNAME" ]; then
-          USERNAME="${{ github.actor }}"
-        fi
-
-        # Try to fetch GitHub SSH keys
-        echo "Fetching SSH keys for $USERNAME..."
-        if curl -sf "https://github.com/$USERNAME.keys" > /tmp/github_keys.txt && [ -s /tmp/github_keys.txt ]; then
-          echo "Using GitHub SSH keys for encryption"
-          RECIPIENT_FILE=/tmp/github_keys.txt
-        elif [ -n "${{ inputs.public_key_path }}" ]; then
-          echo "Using age public key from ${{ inputs.public_key_path }}"
+        # Use age key if specified, otherwise use GitHub SSH keys
+        if [ -n "${{ inputs.public_key_path }}" ]; then
           RECIPIENT_FILE="${{ inputs.public_key_path }}"
         else
-          echo "ERROR: No public keys found (no GitHub SSH keys and no age key specified)"
-          exit 1
+          curl -sf "https://github.com/${{ github.actor }}.keys" > /tmp/github_keys.txt
+          RECIPIENT_FILE=/tmp/github_keys.txt
         fi
 
         echo "=== ENCRYPTED SECRETS (base64) ==="
