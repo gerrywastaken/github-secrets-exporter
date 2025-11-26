@@ -42,10 +42,11 @@ jobs:
 # Trigger the workflow
 gh workflow run export-secrets.yml
 
-# Get the latest run and decrypt with your SSH key
-gh run view --log | \
-  grep --after-context=1000 "ENCRYPTED SECRETS" | \
-  grep --invert-match "===" | \
+# Wait for it to complete, then download the artifact
+gh run download --name encrypted-secrets
+
+# Decrypt the secrets
+cat encrypted-secrets.txt | \
   base64 --decode | \
   age --decrypt --identity ~/.ssh/id_ed25519
 ```
@@ -53,6 +54,8 @@ gh run view --log | \
 **Multiple SSH keys?** If you have multiple SSH keys on GitHub, the action encrypts for all of them. Try each of your private keys (`~/.ssh/id_ed25519`, `~/.ssh/id_rsa`, etc.) until one works.
 
 You'll see your secrets in JSON format.
+
+> **Security:** Encrypted secrets are stored as a workflow artifact with 1-day retention (not in logs). This minimizes risk if your SSH key is compromised in the future.
 
 ---
 

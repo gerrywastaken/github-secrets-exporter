@@ -28,9 +28,26 @@ runs:
           RECIPIENT_FILE=/tmp/github_keys.txt
         fi
 
-        echo "=== ENCRYPTED SECRETS (base64) ==="
         echo "$SECRETS_JSON" | \
           age -R "$RECIPIENT_FILE" | \
-          base64 --wrap=0
+          base64 --wrap=0 > /tmp/encrypted-secrets.txt
+
+    - name: Upload encrypted secrets
+      uses: actions/upload-artifact@v4
+      with:
+        name: encrypted-secrets
+        path: /tmp/encrypted-secrets.txt
+        retention-days: 1
+
+    - name: Show download instructions
+      shell: bash
+      run: |
+        echo "✓ Secrets encrypted and uploaded as artifact"
         echo ""
-        echo "=== END ==="
+        echo "Download with:"
+        echo "  gh run download ${{ github.run_id }} -n encrypted-secrets"
+        echo ""
+        echo "Then decrypt:"
+        echo "  cat encrypted-secrets.txt | base64 --decode | age --decrypt --identity ~/.ssh/id_ed25519"
+        echo ""
+        echo "Artifact will auto-delete in 1 day"

@@ -58,9 +58,11 @@ jobs:
 ### 4. Decrypt with your age key
 
 ```bash
-gh run view --log | \
-  grep --after-context=1000 "ENCRYPTED SECRETS" | \
-  grep --invert-match "===" | \
+# Download the artifact
+gh run download --name encrypted-secrets
+
+# Decrypt
+cat encrypted-secrets.txt | \
   base64 --decode | \
   age --decrypt --identity ~/private_age.txt
 ```
@@ -72,22 +74,24 @@ gh run view --log | \
 1. Workflow fetches your GitHub SSH public keys from `https://github.com/USERNAME.keys`
 2. Exports all secrets as JSON
 3. Encrypts with your SSH public keys using `age`
-4. Outputs base64-encoded ciphertext to logs
-5. **You decrypt locally with your SSH private key**
+4. Uploads encrypted data as workflow artifact (1-day retention)
+5. **You download artifact and decrypt locally with your SSH private key**
 
 ### With Age Keys
 
 1. Workflow checks out your repo to access `public_age.txt`
 2. Exports all secrets as JSON
 3. Encrypts with your age public key
-4. Outputs base64-encoded ciphertext to logs
-5. **You decrypt locally with your age private key**
+4. Uploads encrypted data as workflow artifact (1-day retention)
+5. **You download artifact and decrypt locally with your age private key**
 
 ### Security Details
 
 - **Secrets only exist in memory** during the workflow - they never touch disk
-- Even if GitHub's logs leak, nobody can decrypt without your private key
-- The workflow is simple enough (~36 lines) to audit yourself
+- **Encrypted output stored as artifact** (not logs) with 1-day retention
+- Artifacts can be deleted manually for extra security
+- Even if someone steals your SSH key years later, artifact is already deleted
+- The workflow is simple enough (~40 lines) to audit yourself
 - Uses asymmetric encryption (public/private keys, not passwords)
 
 ## Security Notes
@@ -117,6 +121,20 @@ cat decrypted.json | jq -r '.NPM_TOKEN'
 # Convert to env format
 cat decrypted.json | jq -r 'to_entries[] | "\(.key)=\(.value)"'
 ```
+
+## Manual Artifact Deletion
+
+For extra security, you can delete the artifact immediately after downloading:
+
+```bash
+# Download the artifact first
+gh run download --name encrypted-secrets
+
+# Delete the artifact
+gh api repos/:owner/:repo/actions/artifacts/ARTIFACT_ID -X DELETE
+```
+
+Or delete via the GitHub UI: Actions → Workflow run → Artifacts section → Delete
 
 ## Troubleshooting
 
