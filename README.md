@@ -15,6 +15,8 @@ This action lets you export all secrets safely by encrypting them with your pers
 
 ## Quick Start
 
+> **Want maximum security?** See [ADVANCED.md](ADVANCED.md) for forking and auditing the code yourself.
+
 ### 1. [Install age](https://github.com/FiloSottile/age#installation)
 
 ### 2. Add the workflow to your repository
