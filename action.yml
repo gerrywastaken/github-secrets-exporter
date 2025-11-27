@@ -37,6 +37,8 @@ runs:
         name: encrypted-secrets
         path: /tmp/encrypted-secrets.age
         retention-days: 1
+      env:
+        SECRETS_JSON: ""
 
     - name: Cleanup and show instructions
       shell: bash
