@@ -65,23 +65,15 @@ age --decrypt --identity ~/private_age.txt < encrypted-secrets.age
 4. Uploads encrypted data as workflow artifact (1-day retention)
 5. **You download artifact and decrypt locally with your private key**
 
-### Security Details
+## Security Model
 
 - **Public key is inline** in your workflow file (visible, auditable)
-- **Secrets only exist in memory** during the workflow - they never touch disk
-- **Encrypted output stored as artifact** (not logs) with 1-day retention
-- Artifacts can be deleted manually for extra security
-- Even if someone steals your private key years later, artifact is already deleted
-- The action code is simple enough (~40 lines) to audit yourself
-- Uses asymmetric encryption (public/private keys, not passwords)
-- **Best practice**: Fork and audit the code before using
-
-## Security Notes
-
-- Uses **asymmetric encryption** (public/private keys, not passwords)
+- **Secrets only exist in memory** during the workflow - never touch disk
+- **Encrypted output as artifact** (not logs) with 1-day retention
 - **Private key never leaves your machine**
-- **Secrets only exist in memory** during the workflow run
-- Simple, auditable code (~30 lines in `action.yml`)
+- Uses **asymmetric encryption** (public/private keys, not passwords)
+- Simple, auditable code (~40 lines in `action.yml`)
+- **Best practice**: Fork and audit the code before using
 
 ### Workflow Trigger Options
 
