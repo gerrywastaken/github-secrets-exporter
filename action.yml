@@ -21,8 +21,11 @@ runs:
       run: |
         set -euo pipefail
 
+        recipient="${{ inputs.public_encryption_key }}"
+        [[ "$recipient" =~ ^[A-Za-z0-9]+$ ]] || { echo "public_encryption_key must be alphanumeric" >&2; exit 1; }
+
         echo "$SECRETS_JSON" | \
-          age -r "${{ inputs.public_encryption_key }}" \
+          age -r "$recipient" \
           -o /tmp/encrypted-secrets.age
 
         # Cleanup immediately
