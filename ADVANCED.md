@@ -30,7 +30,7 @@ with:
 
 Decrypt with:
 ```bash
-age --decrypt --identity ~/.ssh/id_ed25519
+age --decrypt --identity ~/.ssh/id_ed25519 < encrypted-secrets.age
 ```
 
 ### Age Keys
@@ -54,7 +54,7 @@ with:
 
 Decrypt with:
 ```bash
-age --decrypt --identity ~/private_age.txt
+age --decrypt --identity ~/private_age.txt < encrypted-secrets.age
 ```
 
 ## How It Works
@@ -80,9 +80,22 @@ age --decrypt --identity ~/private_age.txt
 
 - Uses **asymmetric encryption** (public/private keys, not passwords)
 - **Private key never leaves your machine**
-- **Encrypted logs are safe** - only you can decrypt
 - **Secrets only exist in memory** during the workflow run
-- Simple, auditable code (~36 lines in `action.yml`)
+- Simple, auditable code (~30 lines in `action.yml`)
+
+### Critical: Workflow Trigger Security
+
+**⚠️ NEVER use `pull_request` or `pull_request_target` triggers with this action!**
+
+Why? A malicious PR could:
+1. Modify the workflow file to change the encryption key
+2. Exfiltrate secrets before encryption
+3. Send secrets to an attacker-controlled server
+
+**Always use `workflow_dispatch`** (manual trigger only). This ensures:
+- Only repo maintainers with write access can trigger the export
+- The workflow file in the main branch is used (not from a PR)
+- No automated triggers that could be exploited
 
 ## Example Output
 

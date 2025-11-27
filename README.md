@@ -36,7 +36,7 @@ Copy your public key (starts with `age1...` or `ssh-ed25519` or `ssh-rsa`).
 ```yaml
 # .github/workflows/export-secrets.yml
 name: Export Secrets
-on: workflow_dispatch
+on: workflow_dispatch  # NEVER use pull_request - PRs could modify workflow to steal secrets!
 
 jobs:
   export:
@@ -52,6 +52,8 @@ jobs:
 
 Replace with your actual public key. It's public, so it's safe to commit!
 
+> **⚠️ SECURITY WARNING:** Only use `workflow_dispatch` (manual trigger). NEVER use `pull_request` or `pull_request_target` - malicious PRs could modify the workflow to steal secrets!
+
 ### 4. Run and decrypt
 
 ```bash
@@ -62,9 +64,7 @@ gh workflow run export-secrets.yml
 gh run download --name encrypted-secrets
 
 # Decrypt the secrets
-cat encrypted-secrets.txt | \
-  base64 --decode | \
-  age --decrypt --identity ~/.ssh/id_ed25519
+age --decrypt --identity ~/.ssh/id_ed25519 < encrypted-secrets.age
 ```
 
 You'll see your secrets in JSON format.

@@ -19,29 +19,27 @@ runs:
     - name: Export and encrypt all secrets
       shell: bash
       run: |
-        # Write public key to temp file
-        echo "${{ inputs.public_encryption_key }}" > /tmp/public_key.txt
+        set -euo pipefail
 
         echo "$SECRETS_JSON" | \
-          age -R /tmp/public_key.txt | \
-          base64 --wrap=0 > /tmp/encrypted-secrets.txt
+          age -r "${{ inputs.public_encryption_key }}" \
+          -o /tmp/encrypted-secrets.age
 
         # Cleanup immediately
-        rm -f /tmp/public_key.txt
         unset SECRETS_JSON
 
     - name: Upload encrypted secrets
       uses: actions/upload-artifact@v4
       with:
         name: encrypted-secrets
-        path: /tmp/encrypted-secrets.txt
+        path: /tmp/encrypted-secrets.age
         retention-days: 1
 
     - name: Cleanup and show instructions
       shell: bash
       run: |
         # Delete encrypted file from runner
-        rm -f /tmp/encrypted-secrets.txt
+        rm -f /tmp/encrypted-secrets.age
 
         echo "✓ Secrets encrypted and uploaded as artifact"
         echo ""
@@ -49,6 +47,6 @@ runs:
         echo "  gh run download ${{ github.run_id }} -n encrypted-secrets"
         echo ""
         echo "Then decrypt:"
-        echo "  cat encrypted-secrets.txt | base64 --decode | age --decrypt --identity ~/.ssh/id_ed25519"
+        echo "  age --decrypt --identity ~/.ssh/id_ed25519 < encrypted-secrets.age"
         echo ""
         echo "Artifact will auto-delete in 1 day"
