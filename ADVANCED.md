@@ -83,6 +83,8 @@ age --decrypt --identity ~/private_age.txt < encrypted-secrets.age
 - Download secrets, then close PR without merging
 - Workflow never enters main branch (safer long-term)
 
+> **Note for forks:** GitHub does not pass repository secrets to workflows that run from forked pull requests. Use a branch in the same repository or a `workflow_dispatch` run if you fork this action.
+
 **Alternative: `workflow_dispatch` trigger**
 - Merge workflow to main branch
 - Manually trigger when needed

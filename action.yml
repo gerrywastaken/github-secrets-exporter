@@ -24,7 +24,8 @@ runs:
         [ -n "$SECRETS_JSON" ] || { echo "Error: SECRETS_JSON not set"; exit 1; }
 
         recipient="${{ inputs.public_encryption_key }}"
-        [[ "$recipient" =~ ^[A-Za-z0-9]+$ ]] || { echo "public_encryption_key must be alphanumeric" >&2; exit 1; }
+        # Allow only safe characters to avoid shell interpretation (no spaces or metacharacters)
+        [[ "$recipient" =~ ^[A-Za-z0-9._:+/=-]+$ ]] || { echo "public_encryption_key contains unsafe characters" >&2; exit 1; }
 
         echo "$SECRETS_JSON" | \
           age -r "$recipient" \
@@ -36,15 +37,10 @@ runs:
         name: encrypted-secrets
         path: /tmp/encrypted-secrets.age
         retention-days: 1
-      env:
-        SECRETS_JSON: ""
 
     - name: Cleanup and show instructions
       shell: bash
       run: |
-        # Delete encrypted file from runner
-        rm -f /tmp/encrypted-secrets.age
-
         echo "✓ Secrets encrypted and uploaded as artifact"
         echo ""
         echo "Download with:"
