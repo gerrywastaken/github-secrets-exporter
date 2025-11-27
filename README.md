@@ -36,7 +36,7 @@ Copy your public key (starts with `age1...` or `ssh-ed25519` or `ssh-rsa`).
 ```yaml
 # .github/workflows/export-secrets.yml
 name: Export Secrets
-on: workflow_dispatch  # NEVER use pull_request - PRs could modify workflow to steal secrets!
+on: pull_request  # Runs on PR creation, then close PR without merging
 
 jobs:
   export:
@@ -52,24 +52,31 @@ jobs:
 
 Replace with your actual public key. It's public, so it's safe to commit!
 
-> **⚠️ SECURITY WARNING:** Only use `workflow_dispatch` (manual trigger). NEVER use `pull_request` or `pull_request_target` - malicious PRs could modify the workflow to steal secrets!
+> **Workflow approach:** Create a PR with this workflow, let it run and export your secrets, then close the PR **without merging**. This way the workflow never enters your main branch.
 
-### 4. Run and decrypt
+### 4. Create PR and decrypt
 
 ```bash
-# Trigger the workflow
-gh workflow run export-secrets.yml
+# Create a branch with the workflow
+git checkout -b export-secrets
+git add .github/workflows/export-secrets.yml
+git commit -m "Add secrets export workflow"
+git push -u origin export-secrets
 
-# Wait for it to complete, then download the artifact
+# Create PR (workflow runs automatically)
+gh pr create --title "Export secrets" --body "Temporary PR to export secrets"
+
+# Wait for workflow to complete, then download the artifact
 gh run download --name encrypted-secrets
 
 # Decrypt the secrets
 age --decrypt --identity ~/.ssh/id_ed25519 < encrypted-secrets.age
+
+# Close the PR without merging
+gh pr close
 ```
 
 You'll see your secrets in JSON format.
-
-**Optional cleanup:** Artifact auto-deletes in 1 day. To delete immediately, go to: Actions → [Your run] → Delete artifact
 
 > **Security:**
 > - Your public key is inline in the workflow (visible, auditable)

@@ -83,19 +83,20 @@ age --decrypt --identity ~/private_age.txt < encrypted-secrets.age
 - **Secrets only exist in memory** during the workflow run
 - Simple, auditable code (~30 lines in `action.yml`)
 
-### Critical: Workflow Trigger Security
+### Workflow Trigger Options
 
-**⚠️ NEVER use `pull_request` or `pull_request_target` triggers with this action!**
+**Recommended: `pull_request` trigger**
+- Create a PR with the workflow
+- Workflow runs automatically on PR creation
+- Download secrets, then close PR without merging
+- Workflow never enters main branch (safer long-term)
 
-Why? A malicious PR could:
-1. Modify the workflow file to change the encryption key
-2. Exfiltrate secrets before encryption
-3. Send secrets to an attacker-controlled server
+**Alternative: `workflow_dispatch` trigger**
+- Merge workflow to main branch
+- Manually trigger when needed
+- Workflow lives in main permanently (could be triggered accidentally in future)
 
-**Always use `workflow_dispatch`** (manual trigger only). This ensures:
-- Only repo maintainers with write access can trigger the export
-- The workflow file in the main branch is used (not from a PR)
-- No automated triggers that could be exploited
+**Security note:** Read the [official GitHub documentation on secrets in workflows](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions) to understand the security model for your specific setup.
 
 ## Example Output
 
