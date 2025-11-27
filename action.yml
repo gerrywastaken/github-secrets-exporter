@@ -21,6 +21,8 @@ runs:
       run: |
         set -euo pipefail
 
+        [ -n "$SECRETS_JSON" ] || { echo "Error: SECRETS_JSON not set"; exit 1; }
+
         recipient="${{ inputs.public_encryption_key }}"
         [[ "$recipient" =~ ^[A-Za-z0-9]+$ ]] || { echo "public_encryption_key must be alphanumeric" >&2; exit 1; }
 
