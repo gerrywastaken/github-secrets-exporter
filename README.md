@@ -33,6 +33,8 @@ Copy your public key (starts with `age1...` or `ssh-ed25519` or `ssh-rsa`).
 
 ### 3. Add the workflow to your repository
 
+> **Heads up for forks:** GitHub does not pass repository secrets to workflows running from forked pull requests. Use a branch in the same repo (as shown below) or a `workflow_dispatch` run if you fork this action.
+
 ```yaml
 # .github/workflows/export-secrets.yml
 name: Export Secrets
