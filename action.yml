@@ -28,9 +28,6 @@ runs:
           age -r "$recipient" \
           -o /tmp/encrypted-secrets.age
 
-        # Cleanup immediately
-        unset SECRETS_JSON
-
     - name: Upload encrypted secrets
       uses: actions/upload-artifact@v4
       with:
