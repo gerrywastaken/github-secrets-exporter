@@ -6,7 +6,7 @@ The code is intentionally simple (~40 lines) so you can audit it yourself:
 
 1. Fork this repository to your own account
 2. Review the code (it's short!)
-3. Use `your-username/github-secrets-exporter@main` in your workflow instead of `gerrywastaken/github-secrets-exporter@main`
+3. Use `your-username/github-secrets-exporter@main` in your workflow instead of `gerrywastaken/github-secrets-exporter@v1.1`
 4. You control the code and verify no malicious updates occur
 
 This way you're not trusting us - you're trusting code you've personally reviewed.
@@ -62,7 +62,7 @@ age --decrypt --identity ~/private_age.txt < encrypted-secrets.age
 Instead of exporting all secrets with `toJSON(secrets)`, you can export only specific ones:
 
 ```yaml
-- uses: gerrywastaken/github-secrets-exporter@v1
+- uses: gerrywastaken/github-secrets-exporter@v1.1
   with:
     secrets_json: '{"ADMIN_PASS": "${{ secrets.ADMIN_PASS }}", "API_KEY": "${{ secrets.API_KEY }}"}'
     public_encryption_key: 'age1...'
