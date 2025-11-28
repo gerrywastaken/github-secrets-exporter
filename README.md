@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # For better security: fork, audit, and use your own copy (see ADVANCED.md)
-      - uses: gerrywastaken/github-secrets-exporter@main
+      - uses: gerrywastaken/github-secrets-exporter@v1
         env:
           SECRETS_JSON: ${{ toJSON(secrets) }}
         with:
