@@ -55,15 +55,23 @@ jobs:
           public_encryption_key: 'age1dp0rje7667cqhct9es3ap6ttq365nfk4u72vw5r4khv0lzppyv7qr3ttly'
 ```
 
-3. Create a PR with the workflow, let it run, then download the artifact:
+3. Create a PR, watch, download, and decrypt (use command chaining to avoid timing issues):
 ```bash
-gh run download --name encrypted-secrets
+# Quick one-liner approach (recommended)
+git checkout -b export-secrets && \
+git add .github/workflows/export-secrets.yml && \
+git commit -m "Add secrets export workflow" && \
+git push -u origin export-secrets && \
+gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR" && \
+gh run watch && \
+gh run download --name encrypted-secrets && \
+age --decrypt --identity private_age.txt < encrypted-secrets.age && \
+gh pr close
+
+# Then cleanup: rm encrypted-secrets.age private_age.txt
 ```
 
-4. Decrypt locally:
-```bash
-age --decrypt --identity private_age.txt < encrypted-secrets.age
-```
+> **Note:** Chaining commands with `&&` prevents the "found no in progress runs to watch" error that occurs when running `gh run watch` separately.
 
 ### Customization
 

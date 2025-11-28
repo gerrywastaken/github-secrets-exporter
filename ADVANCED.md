@@ -39,6 +39,7 @@ Generate a dedicated age key:
 
 ```bash
 age-keygen -o ~/private_age.txt
+chmod 600 ~/private_age.txt  # Restrict to owner only
 ```
 
 This outputs:
@@ -56,6 +57,13 @@ Decrypt with:
 ```bash
 age --decrypt --identity ~/private_age.txt < encrypted-secrets.age
 ```
+
+**Alternative storage locations:**
+- **Current directory** (`./private.key`): Easy to find but risk of accidental commit
+- **Home directory** (`~/private_age.txt`): Safe from accidental commit, persists between sessions
+- **Temporary directory** (`/tmp/private.key`): Auto-cleanup by system, but on multi-user systems check permissions
+
+Always use `chmod 600` to restrict file access to owner only, and delete the key after use.
 
 ## Exporting Specific Secrets
 
@@ -138,6 +146,34 @@ gh api repos/:owner/:repo/actions/artifacts/ARTIFACT_ID -X DELETE
 Or delete via the GitHub UI: Actions → Workflow run → Artifacts section → Delete
 
 ## Troubleshooting
+
+### "gh run watch" says "found no in progress runs to watch"
+
+This happens when you run `gh run watch` after the workflow has already started or completed. There's a timing gap between creating the PR and running the watch command separately.
+
+**Solutions:**
+1. **Chain commands together (recommended):** Use `&&` to chain `gh pr create` and `gh run watch`:
+   ```bash
+   gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR" && gh run watch
+   ```
+
+2. **Use the web interface:** If you miss the run:
+   ```bash
+   gh run view --web  # Opens browser to latest run
+   ```
+
+3. **List and watch a specific run:**
+   ```bash
+   gh run list  # Find the run ID
+   gh run watch <run-id>  # Watch specific run
+   ```
+
+4. **Download without watching:** If the run already completed:
+   ```bash
+   gh run download --name encrypted-secrets
+   ```
+
+See the README.md for the recommended one-liner that avoids this timing issue entirely.
 
 ### "Doesn't this action make my repo unsafe?"
 
