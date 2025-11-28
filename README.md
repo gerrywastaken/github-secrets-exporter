@@ -2,6 +2,12 @@
 
 Securely export your GitHub repository secrets. They're encrypted with your personal key, so only you can decrypt them.
 
+**WARNING**: If you are here because somebody is trying to add this to your repository. **STOP!**
+They are a almost certainly a scammer. Delete their PR.
+
+Additionally **nobody (not even you) ever needs to merge a pr with this in a workflow**.
+It is for temporary use only by repository OWNERS and by design does not and should not be merged.
+
 ## Why?
 
 GitHub Actions secrets are write-only by design. You can't read them through the UI or API. This makes it hard to:
@@ -22,11 +28,8 @@ This action lets you export all secrets safely by encrypting them with your pers
 ### 2. Get your public key
 
 ```bash
-# If you have an SSH key, get it from GitHub
-curl https://github.com/YOUR_USERNAME.keys
-
-# Or generate a new age key
-age-keygen
+# Generate a new age private key (or you can use one of your own https://github.com/YOUR_USERNAME.keys)
+age-keygen -o private.key
 ```
 
 Copy your public key (starts with `age1...` or `ssh-ed25519` or `ssh-rsa`).
