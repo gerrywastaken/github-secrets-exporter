@@ -58,9 +58,9 @@ EOF
 BRANCH="export-secrets-$(date +%s)"
 git checkout -b "$BRANCH"
 git add .github/workflows/export-secrets.yml
-git commit -m "Add secrets export workflow"
+git commit -m "DO NOT MERGE: Export secrets"
 git push -u origin "$BRANCH"
-gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR"
+gh pr create --fill
 
 # 4. Wait for workflow and get run ID
 sleep 5  # Give GitHub time to start the workflow

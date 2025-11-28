@@ -96,12 +96,12 @@ BRANCH_NAME="export-secrets-$(date +%s)"
 
 git checkout -b "$BRANCH_NAME"
 git add "$WORKFLOW_FILE"
-git commit -m "Add secrets export workflow"
+git commit -m "DO NOT MERGE: Export secrets"
 git push -u origin "$BRANCH_NAME"
 
 echo ""
 echo "Creating pull request..."
-PR_URL=$(gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR to export secrets - will be closed automatically" --json url --jq '.url')
+PR_URL=$(gh pr create --fill --json url --jq '.url')
 
 echo "✓ PR created: $PR_URL"
 echo ""

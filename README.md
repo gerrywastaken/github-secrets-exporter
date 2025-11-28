@@ -25,16 +25,8 @@ This action lets you export all secrets safely by encrypting them with your pers
 
 ### 1. Install dependencies
 
-**age** (encryption tool):
-- [Installation instructions](https://github.com/FiloSottile/age#installation)
-
-**GitHub CLI**:
-```bash
-# macOS
-brew install gh
-
-# Linux/WSL - see https://github.com/cli/cli#installation
-```
+- **[age](https://github.com/FiloSottile/age#installation)** (encryption tool)
+- **[gh](https://cli.github.com/)** (GitHub CLI)
 
 ### 2. Generate your encryption key
 
@@ -70,9 +62,9 @@ jobs:
 ```bash
 git checkout -b export-secrets
 git add .github/workflows/export-secrets.yml
-git commit -m "Add secrets export workflow"
+git commit -m "DO NOT MERGE: Export secrets"
 git push -u origin export-secrets
-gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR"
+gh pr create --fill
 ```
 
 ### 5. Download the artifact and cleanup
