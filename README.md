@@ -30,9 +30,12 @@ This action lets you export all secrets safely by encrypting them with your pers
 ```bash
 # Generate a new age private key (or you can use one of your own https://github.com/YOUR_USERNAME.keys)
 age-keygen -o private.key
+chmod 600 private.key  # Restrict permissions to owner only
 ```
 
 Copy your public key (starts with `age1...` or `ssh-ed25519` or `ssh-rsa`).
+
+> **Security tip:** The private key is stored in your current directory. Always delete it after use (`rm private.key`). Never commit it to git.
 
 ### 3. Add the workflow to your repository
 
@@ -61,8 +64,29 @@ Replace with your actual public key. It's public, so it's safe to commit!
 
 ### 4. Create PR and decrypt
 
-```bash
+**Option A: Quick one-liner (recommended)**
 
+```bash
+# Create branch, push, PR, watch, download, decrypt, and cleanup in one go
+git checkout -b export-secrets && \
+git add .github/workflows/export-secrets.yml && \
+git commit -m "Add secrets export workflow" && \
+git push -u origin export-secrets && \
+gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR to export secrets" && \
+gh run watch && \
+gh run download --name encrypted-secrets && \
+age --decrypt --identity private.key < encrypted-secrets.age && \
+gh pr close
+
+# Save the output somewhere secure, then cleanup:
+rm encrypted-secrets.age private.key
+```
+
+> **Why chain commands?** Running `gh run watch` separately often misses the workflow start, showing "found no in progress runs to watch". Chaining with `&&` ensures proper timing.
+
+**Option B: Step-by-step (for troubleshooting)**
+
+```bash
 ##################################
 # Kick off the artifact generation
 ##################################
@@ -73,20 +97,17 @@ git add .github/workflows/export-secrets.yml
 git commit -m "Add secrets export workflow"
 git push -u origin export-secrets
 
-# Create PR (workflow runs automatically)
-gh pr create --title "Export secrets" --body "Temporary PR to export secrets"
-
-# Watch the workflow until the artifact is created
-gh run watch
+# Create PR (workflow runs automatically) and immediately watch it
+gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR to export secrets" && gh run watch
 
 ##################
 # Grab the secrets
 ##################
 
-# Wait for workflow to complete, then download the artifact
+# Download the artifact
 gh run download --name encrypted-secrets
 
-# Decrypt the secrets and store the secrets somewhere secure
+# Decrypt the secrets and store them somewhere secure
 age --decrypt --identity private.key < encrypted-secrets.age
 
 # You'll see your secrets in JSON format.
@@ -95,16 +116,15 @@ age --decrypt --identity private.key < encrypted-secrets.age
 # Do the cleanup
 ################
 
-# 1. Close the PR to prevent it from being accidentally mered
+# 1. Close the PR to prevent accidental merging
 gh pr close
 
-# 2. delete the plaintext after you have stored the passwords
-# 3. Delete the encrypted file too as well as the the private key you
-# generated for this process, so it is never possible for somebody to steal
-# the key and encrypted file.
+# 2. Delete local files (after saving the decrypted secrets securely)
+rm encrypted-secrets.age private.key
 
-# 3. Delete the workflow and thus the encrypted secrets
-gh run delete --name encrypted-secrets
+# 3. (Optional) Delete the workflow run to remove artifacts from GitHub
+# gh run list  # Find the run ID
+# gh run delete <run-id>
 ```
 
 
