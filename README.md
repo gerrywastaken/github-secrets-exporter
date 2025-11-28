@@ -53,7 +53,7 @@ jobs:
           SECRETS_JSON: ${{ toJSON(secrets) }}
         with:
           # YOUR public key goes here
-          public_encryption_key: 'ageReallyLongStringOfNumbersAndLetters'
+          public_encryption_key: '<your public key e.g. starts with `age`>'
 ```
 
 Replace with your actual public key. It's public, so it's safe to commit!
