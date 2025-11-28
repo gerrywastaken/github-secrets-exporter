@@ -23,109 +23,75 @@ This action lets you export all secrets safely by encrypting them with your pers
 
 > **Want maximum security?** See [ADVANCED.md](ADVANCED.md) for forking and auditing the code yourself.
 
-### 1. [Install age](https://github.com/FiloSottile/age#installation)
+### 1. Install dependencies
 
-### 2. Get your public key
+**age** (encryption tool):
+- [Installation instructions](https://github.com/FiloSottile/age#installation)
 
+**GitHub CLI**:
 ```bash
-# Generate a new age private key (or you can use one of your own https://github.com/YOUR_USERNAME.keys)
-age-keygen -o private.key
-chmod 600 private.key  # Restrict permissions to owner only
+# macOS
+brew install gh
+
+# Linux/WSL - see https://github.com/cli/cli#installation
 ```
 
-Copy your public key (starts with `age1...` or `ssh-ed25519` or `ssh-rsa`).
+### 2. Export your secrets
 
-> **Security tip:** The private key is stored in your current directory. Always delete it after use (`rm private.key`). Never commit it to git.
+**Option A: Interactive script (recommended)**
 
-### 3. Add the workflow to your repository
-
-> **Heads up for forks:** GitHub does not pass repository secrets to workflows running from forked pull requests. Use a branch in the same repo (as shown below) or a `workflow_dispatch` run if you fork this action.
-
-```yaml
-# .github/workflows/export-secrets.yml
-name: Export Secrets
-on: pull_request  # Runs on PR creation, then close PR without merging
-
-jobs:
-  export:
-    runs-on: ubuntu-latest
-    steps:
-      # For better security: fork, audit, and use your own copy (see ADVANCED.md)
-      - uses: gerrywastaken/github-secrets-exporter@v1.1
-        with:
-          secrets_json: ${{ toJSON(secrets) }}
-          # YOUR public key goes here
-          public_encryption_key: '<your public key e.g. age1...>'
-```
-
-Replace with your actual public key. It's public, so it's safe to commit!
-
-> **Workflow approach:** Create a PR with this workflow, let it run and export your secrets, then close the PR **without merging**. This way the workflow never enters your main branch.
-
-### 4. Create PR and decrypt
-
-**Option A: Quick one-liner (recommended)**
+The easiest and safest way is to use the interactive script:
 
 ```bash
-# Create branch, push, PR, watch, download, decrypt, and cleanup in one go
-git checkout -b export-secrets && \
-git add .github/workflows/export-secrets.yml && \
-git commit -m "Add secrets export workflow" && \
-git push -u origin export-secrets && \
-gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR to export secrets" && \
-gh run watch && \
-gh run download --name encrypted-secrets && \
-age --decrypt --identity private.key < encrypted-secrets.age && \
-gh pr close && \
-gh run delete $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
+# Download and run the script
+curl -fsSL https://raw.githubusercontent.com/gerrywastaken/github-secrets-exporter/main/export-secrets.sh | bash
 
-# Save the output somewhere secure, then cleanup local files:
-rm encrypted-secrets.age private.key
+# Or if you've cloned the repo:
+./export-secrets.sh
 ```
 
-> **Why chain commands?** Running `gh run watch` separately often misses the workflow start, showing "found no in progress runs to watch". Chaining with `&&` ensures proper timing.
+The script will:
+- Generate a temporary age keypair (auto-deleted after)
+- Create the workflow file with your public key
+- Create a PR and wait for the workflow
+- Download and decrypt your secrets
+- Clean up everything automatically
 
-**Option B: Step-by-step (for troubleshooting)**
+> **Security:** The private key is stored in a temporary directory created with `mktemp` and deleted when the script exits. It never touches your working directory.
+
+**Option B: Manual commands (advanced)**
+
+If you prefer manual control:
 
 ```bash
-##################################
-# Kick off the artifact generation
-##################################
+# Use mktemp for secure key storage
+PRIVATE_KEY=$(mktemp)
+age-keygen -o "$PRIVATE_KEY"
 
-# Create a branch with the workflow
-git checkout -b export-secrets
+# Extract public key (will be printed by age-keygen)
+# Copy it and add to your workflow file at .github/workflows/export-secrets.yml
+
+# Create workflow manually (see step 3 above), then:
+BRANCH="export-secrets-$(date +%s)"
+git checkout -b "$BRANCH"
 git add .github/workflows/export-secrets.yml
 git commit -m "Add secrets export workflow"
-git push -u origin export-secrets
+git push -u origin "$BRANCH"
 
-# Create PR (workflow runs automatically) and immediately watch it
-gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR to export secrets" && gh run watch
+# Create PR and capture workflow
+gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR" && \
+RUN_ID=$(gh run list --branch "$BRANCH" --workflow=export-secrets.yml --limit 1 --json databaseId --jq '.[0].databaseId') && \
+gh run watch "$RUN_ID" && \
+gh run download "$RUN_ID" --name encrypted-secrets && \
+age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age
 
-##################
-# Grab the secrets
-##################
-
-# Download the artifact
-gh run download --name encrypted-secrets
-
-# Decrypt the secrets and store them somewhere secure
-age --decrypt --identity private.key < encrypted-secrets.age
-
-# You'll see your secrets in JSON format.
-
-################
-# Do the cleanup
-################
-
-# 1. Close the PR to prevent accidental merging
+# Cleanup
 gh pr close
-
-# 2. Delete local files (after saving the decrypted secrets securely)
-rm encrypted-secrets.age private.key
-
-# 3. Delete the workflow run and artifacts from GitHub
-gh run list --limit 1  # Get the most recent run ID
-gh run delete $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
+gh run delete "$RUN_ID"
+rm "$PRIVATE_KEY" encrypted-secrets.age
+git checkout -
+git branch -D "$BRANCH"
+git push origin --delete "$BRANCH"
 ```
 
 
