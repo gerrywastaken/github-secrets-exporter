@@ -49,9 +49,8 @@ jobs:
     steps:
       # For better security: fork, audit, and use your own copy (see ADVANCED.md)
       - uses: gerrywastaken/github-secrets-exporter@v1
-        env:
-          SECRETS_JSON: ${{ toJSON(secrets) }}
         with:
+          secrets_json: ${{ toJSON(secrets) }}
           # YOUR public key goes here
           public_encryption_key: '<your public key e.g. starts with `age`>'
 ```
