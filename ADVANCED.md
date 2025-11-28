@@ -1,5 +1,49 @@
 # Advanced Options
 
+## Interactive Script Details
+
+The `export-secrets.sh` script automates the entire export process. Here's what it does:
+
+1. **Checks dependencies** - Verifies `age` and `gh` are installed
+2. **Creates temporary directory** - Uses `mktemp -d` for secure file storage
+3. **Generates keypair** - Creates age keypair in temp directory
+4. **Creates workflow** - Writes `.github/workflows/export-secrets.yml` with your public key
+5. **Manages git operations** - Creates unique branch, commits, pushes
+6. **Handles PR lifecycle** - Creates PR, watches workflow, downloads artifact
+7. **Decrypts secrets** - Shows your secrets on stdout
+8. **Cleans up everything** - Closes PR, deletes workflow run, removes temp files
+
+**Exit trap:** The script uses `trap 'rm -rf "$TEMP_DIR" EXIT'` to ensure temporary files are always deleted, even if the script is interrupted.
+
+**Security benefits:**
+- Private key never touches your working directory (no risk of accidental commit)
+- Automatic cleanup prevents sensitive files from persisting
+- Unique branch names prevent conflicts
+
+## Manual Workflow Creation
+
+If you want to create the workflow file manually (instead of using the script):
+
+```yaml
+# .github/workflows/export-secrets.yml
+name: Export Secrets
+on: pull_request  # Runs on PR creation
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: gerrywastaken/github-secrets-exporter@v1.1
+        with:
+          secrets_json: ${{ toJSON(secrets) }}
+          # YOUR public key goes here (age1... or ssh-ed25519 ...)
+          public_encryption_key: '<your-public-key>'
+```
+
+Then follow the manual commands in README.md step 2.
+
+> **Important:** Never commit this workflow to your main branch. Always use the PR approach to keep it temporary.
+
 ## Fork for Maximum Security (Recommended)
 
 The code is intentionally simple (~40 lines) so you can audit it yourself:
@@ -149,12 +193,15 @@ Or delete via the GitHub UI: Actions → Workflow run → Artifacts section → 
 
 ### "gh run watch" says "found no in progress runs to watch"
 
-This happens when you run `gh run watch` after the workflow has already started or completed. There's a timing gap between creating the PR and running the watch command separately.
+**Best solution:** Use the `export-secrets.sh` script which handles timing automatically.
 
-**Solutions:**
-1. **Chain commands together (recommended):** Use `&&` to chain `gh pr create` and `gh run watch`:
+If using manual commands, this happens when you run `gh run watch` after the workflow has already started or completed.
+
+**Manual solutions:**
+1. **Watch specific run by ID:**
    ```bash
-   gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR" && gh run watch
+   RUN_ID=$(gh run list --branch "$BRANCH" --workflow=export-secrets.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+   gh run watch "$RUN_ID"
    ```
 
 2. **Use the web interface:** If you miss the run:
@@ -162,18 +209,10 @@ This happens when you run `gh run watch` after the workflow has already started 
    gh run view --web  # Opens browser to latest run
    ```
 
-3. **List and watch a specific run:**
+3. **Download without watching:** If the run already completed:
    ```bash
-   gh run list  # Find the run ID
-   gh run watch <run-id>  # Watch specific run
+   gh run download "$RUN_ID" --name encrypted-secrets
    ```
-
-4. **Download without watching:** If the run already completed:
-   ```bash
-   gh run download --name encrypted-secrets
-   ```
-
-See the README.md for the recommended one-liner that avoids this timing issue entirely.
 
 ### "Doesn't this action make my repo unsafe?"
 

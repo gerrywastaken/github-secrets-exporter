@@ -31,48 +31,59 @@ This action solves this by:
 
 ## Usage
 
-### Setup
+### Quick Start (Recommended)
 
-1. Generate an age keypair:
+Use the interactive script for the safest and easiest experience:
+
 ```bash
-age-keygen -o private_age.txt
-# Prints: Public key: age1dp0rje7667cqhct9es3ap6ttq365nfk4u72vw5r4khv0lzppyv7qr3ttly
+./export-secrets.sh
 ```
 
-2. Create a workflow in your repository:
-```yaml
-# .github/workflows/export-secrets.yml
-name: Export Secrets
-on: pull_request
+The script handles everything automatically:
+- Generates temporary age keypair (stored in `mktemp` directory)
+- Creates workflow file with your public key
+- Creates PR and waits for completion
+- Downloads and decrypts secrets
+- Cleans up all temporary files and artifacts
 
-jobs:
-  export:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: gerrywastaken/github-secrets-exporter@v1.1
-        with:
-          secrets_json: ${{ toJSON(secrets) }}
-          public_encryption_key: 'age1dp0rje7667cqhct9es3ap6ttq365nfk4u72vw5r4khv0lzppyv7qr3ttly'
-```
+### Manual Approach
 
-3. Create a PR, watch, download, and decrypt (use command chaining to avoid timing issues):
+If you prefer full control:
+
 ```bash
-# Quick one-liner approach (recommended)
-git checkout -b export-secrets && \
-git add .github/workflows/export-secrets.yml && \
-git commit -m "Add secrets export workflow" && \
-git push -u origin export-secrets && \
-gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR" && \
-gh run watch && \
-gh run download --name encrypted-secrets && \
-age --decrypt --identity private_age.txt < encrypted-secrets.age && \
-gh pr close && \
-gh run delete $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
+# 1. Generate keypair in temporary location
+PRIVATE_KEY=$(mktemp)
+age-keygen -o "$PRIVATE_KEY"
+# Note the public key printed
 
-# Then cleanup local files: rm encrypted-secrets.age private_age.txt
+# 2. Create workflow with your public key
+# See README.md for workflow template
+
+# 3. Run the export process
+BRANCH="export-secrets-$(date +%s)"
+git checkout -b "$BRANCH"
+git add .github/workflows/export-secrets.yml
+git commit -m "Add secrets export workflow"
+git push -u origin "$BRANCH"
+
+# Create PR and get workflow run ID
+gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR"
+RUN_ID=$(gh run list --branch "$BRANCH" --workflow=export-secrets.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+gh run watch "$RUN_ID"
+gh run download "$RUN_ID" --name encrypted-secrets
+age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age
+
+# 4. Cleanup
+gh pr close
+gh run delete "$RUN_ID"
+rm "$PRIVATE_KEY" encrypted-secrets.age
+git checkout - && git branch -D "$BRANCH"
 ```
 
-> **Note:** Chaining commands with `&&` prevents the "found no in progress runs to watch" error that occurs when running `gh run watch` separately.
+**Key improvements over old approach:**
+- Uses `mktemp` for secure private key storage (never in working directory)
+- Targets specific workflow run by ID (avoids deleting wrong workflow)
+- Unique branch names prevent conflicts
 
 ### Customization
 
@@ -93,9 +104,11 @@ The workflow can be configured to:
 
 ## Files
 
-- `.github/workflows/export-secrets.yml` - The reusable workflow
-- `.github/data/public_age.txt` - Your age public key (user provides)
-- `CLAUDE.md` - This file
+- `action.yml` - The GitHub Action implementation
+- `export-secrets.sh` - Interactive script for easy exports (recommended method)
+- `README.md` - User-facing documentation
+- `ADVANCED.md` - Advanced usage and security details
+- `CLAUDE.md` - This file (project overview for Claude)
 
 ## Development
 
