@@ -57,6 +57,17 @@ Decrypt with:
 age --decrypt --identity ~/private_age.txt < encrypted-secrets.age
 ```
 
+## Exporting Specific Secrets
+
+Instead of exporting all secrets with `toJSON(secrets)`, you can export only specific ones:
+
+```yaml
+- uses: gerrywastaken/github-secrets-exporter@v1
+  with:
+    secrets_json: '{"ADMIN_PASS": "${{ secrets.ADMIN_PASS }}", "API_KEY": "${{ secrets.API_KEY }}"}'
+    public_encryption_key: 'age1...'
+```
+
 ## How It Works
 
 1. You provide your public encryption key inline in the workflow file

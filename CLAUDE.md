@@ -39,37 +39,40 @@ age-keygen -o private_age.txt
 # Prints: Public key: age1dp0rje7667cqhct9es3ap6ttq365nfk4u72vw5r4khv0lzppyv7qr3ttly
 ```
 
-2. Save your public key to the repo:
-```bash
-echo "age1dp0rje7667cqhct9es3ap6ttq365nfk4u72vw5r4khv0lzppyv7qr3ttly" > .github/data/public_age.txt
-git add .github/data/public_age.txt
-git commit -m "Add age public key for secret export"
+2. Create a workflow in your repository:
+```yaml
+# .github/workflows/export-secrets.yml
+name: Export Secrets
+on: pull_request
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: gerrywastaken/github-secrets-exporter@v1
+        with:
+          secrets_json: ${{ toJSON(secrets) }}
+          public_encryption_key: 'age1dp0rje7667cqhct9es3ap6ttq365nfk4u72vw5r4khv0lzppyv7qr3ttly'
 ```
 
-3. Copy the workflow to your target repository:
+3. Create a PR with the workflow, let it run, then download the artifact:
 ```bash
-cp .github/workflows/export-secrets.yml YOUR_REPO/.github/workflows/
+gh run download --name encrypted-secrets
 ```
 
-4. Trigger the workflow in your target repo (via workflow_dispatch or configure to run on push/PR)
-
-5. Get the encrypted output from workflow logs:
+4. Decrypt locally:
 ```bash
-gh run view WORKFLOW_RUN_ID --log | grep -A 1000 "ENCRYPTED SECRETS"
-```
-
-6. Decrypt locally:
-```bash
-echo "BASE64_OUTPUT" | base64 -d | age -d -i private_age.txt > secrets.env
+age --decrypt --identity private_age.txt < encrypted-secrets.age
 ```
 
 ### Customization
 
 The workflow can be configured to:
+- Export all secrets: `secrets_json: ${{ toJSON(secrets) }}`
+- Export specific secrets: `secrets_json: '{"API_KEY": "${{ secrets.API_KEY }}"}'`
 - Run on workflow_dispatch (manual trigger)
 - Run on push to specific branches
 - Run on pull request creation
-- Use a different path for the public key file
 
 ## Security Considerations
 

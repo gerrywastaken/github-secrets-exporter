@@ -8,6 +8,9 @@ inputs:
   public_encryption_key:
     description: 'Your public encryption key (age or SSH format)'
     required: true
+  secrets_json:
+    description: 'JSON of repository secrets (e.g. toJSON(secrets))'
+    required: true
 
 runs:
   using: 'composite'
@@ -21,13 +24,23 @@ runs:
       run: |
         set -euo pipefail
 
-        [ -n "$SECRETS_JSON" ] || { echo "Error: SECRETS_JSON not set"; exit 1; }
+        recipient='${{ inputs.public_encryption_key }}'
+        secrets_json='${{ inputs.secrets_json }}'
 
-        recipient="${{ inputs.public_encryption_key }}"
-        # Allow only safe characters to avoid shell interpretation (no spaces or metacharacters)
-        [[ "$recipient" =~ ^[A-Za-z0-9._:+/=-]+$ ]] || { echo "public_encryption_key contains unsafe characters" >&2; exit 1; }
+        # Validate recipient format to avoid shell interpretation
+        [[ "$recipient" =~ ^[A-Za-z0-9._:+/=-]+$ ]] || {
+          echo "public_encryption_key contains unsafe characters" >&2
+          exit 1
+        }
 
-        echo "$SECRETS_JSON" | \
+        # Validate secrets_json is not empty
+        [ -n "$secrets_json" ] || {
+          echo "Error: secrets_json input is empty" >&2
+          exit 1
+        }
+
+        # Stream secrets to age without echoing (secrets only exist in memory)
+        printf '%s' "$secrets_json" | \
           age -r "$recipient" \
           -o /tmp/encrypted-secrets.age
 
