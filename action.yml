@@ -47,6 +47,6 @@ runs:
         echo "  gh run download ${{ github.run_id }} -n encrypted-secrets"
         echo ""
         echo "Then decrypt:"
-        echo "  age --decrypt --identity ~/.ssh/id_ed25519 < encrypted-secrets.age"
+        echo "  age --decrypt --identity private.key < encrypted-secrets.age"
         echo ""
         echo "Artifact will auto-delete in 1 day"
