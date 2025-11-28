@@ -1,9 +1,18 @@
 # Advanced Options
 
-## Interactive Script Details
+## Automated Script (export-secrets.sh)
 
-The `export-secrets.sh` script automates the entire export process. Here's what it does:
+For users who want a fully automated experience, the `export-secrets.sh` script handles everything:
 
+```bash
+# Download and run
+curl -fsSL https://raw.githubusercontent.com/gerrywastaken/github-secrets-exporter/main/export-secrets.sh | bash
+
+# Or if you've cloned the repo
+./export-secrets.sh
+```
+
+**What it does:**
 1. **Checks dependencies** - Verifies `age` and `gh` are installed
 2. **Creates temporary directory** - Uses `mktemp -d` for secure file storage
 3. **Generates keypair** - Creates age keypair in temp directory
@@ -13,21 +22,27 @@ The `export-secrets.sh` script automates the entire export process. Here's what 
 7. **Decrypts secrets** - Shows your secrets on stdout
 8. **Cleans up everything** - Closes PR, deletes workflow run, removes temp files
 
-**Exit trap:** The script uses `trap 'rm -rf "$TEMP_DIR" EXIT'` to ensure temporary files are always deleted, even if the script is interrupted.
+**Exit trap:** Uses `trap 'rm -rf "$TEMP_DIR" EXIT'` to ensure temporary files are always deleted, even if interrupted.
 
 **Security benefits:**
 - Private key never touches your working directory (no risk of accidental commit)
 - Automatic cleanup prevents sensitive files from persisting
 - Unique branch names prevent conflicts
 
-## Manual Workflow Creation
+## Fully Manual Command-Line Approach
 
-If you want to create the workflow file manually (instead of using the script):
+If you want complete control without using the web interface:
 
-```yaml
-# .github/workflows/export-secrets.yml
+```bash
+# 1. Generate keypair in temporary location
+PRIVATE_KEY=$(mktemp)
+age-keygen -o "$PRIVATE_KEY"
+# Note the public key printed
+
+# 2. Create workflow file with your public key
+cat > .github/workflows/export-secrets.yml <<EOF
 name: Export Secrets
-on: pull_request  # Runs on PR creation
+on: pull_request
 
 jobs:
   export:
@@ -35,14 +50,43 @@ jobs:
     steps:
       - uses: gerrywastaken/github-secrets-exporter@v1.1
         with:
-          secrets_json: ${{ toJSON(secrets) }}
-          # YOUR public key goes here (age1... or ssh-ed25519 ...)
-          public_encryption_key: '<your-public-key>'
+          secrets_json: \${{ toJSON(secrets) }}
+          public_encryption_key: 'YOUR_PUBLIC_KEY_HERE'
+EOF
+
+# 3. Create PR and trigger workflow
+BRANCH="export-secrets-$(date +%s)"
+git checkout -b "$BRANCH"
+git add .github/workflows/export-secrets.yml
+git commit -m "Add secrets export workflow"
+git push -u origin "$BRANCH"
+gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR"
+
+# 4. Wait for workflow and get run ID
+sleep 5  # Give GitHub time to start the workflow
+RUN_ID=$(gh run list --branch "$BRANCH" --workflow=export-secrets.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+
+# 5. Watch and download
+gh run watch "$RUN_ID"
+gh run download "$RUN_ID" --name encrypted-secrets
+
+# 6. Decrypt
+age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age
+
+# 7. Complete cleanup
+gh pr close
+gh run delete "$RUN_ID"
+rm "$PRIVATE_KEY" encrypted-secrets.age
+git checkout -
+git branch -D "$BRANCH"
+git push origin --delete "$BRANCH"
 ```
 
-Then follow the manual commands in README.md step 2.
-
-> **Important:** Never commit this workflow to your main branch. Always use the PR approach to keep it temporary.
+**Key techniques:**
+- `mktemp` for secure private key storage
+- Unique branch names with timestamps to avoid conflicts
+- Target specific workflow by branch + workflow name
+- Complete cleanup of all artifacts
 
 ## Fork for Maximum Security (Recommended)
 

@@ -36,77 +36,96 @@ brew install gh
 # Linux/WSL - see https://github.com/cli/cli#installation
 ```
 
-### 2. Export your secrets
-
-**Option A: Interactive script (recommended)**
-
-The easiest and safest way is to use the interactive script:
+### 2. Generate your encryption key
 
 ```bash
-# Download and run the script
-curl -fsSL https://raw.githubusercontent.com/gerrywastaken/github-secrets-exporter/main/export-secrets.sh | bash
-
-# Or if you've cloned the repo:
-./export-secrets.sh
-```
-
-The script will:
-- Generate a temporary age keypair (auto-deleted after)
-- Create the workflow file with your public key
-- Create a PR and wait for the workflow
-- Download and decrypt your secrets
-- Clean up everything automatically
-
-> **Security:** The private key is stored in a temporary directory created with `mktemp` and deleted when the script exits. It never touches your working directory.
-
-**Option B: Manual commands (advanced)**
-
-If you prefer manual control:
-
-```bash
-# Use mktemp for secure key storage
+# Use mktemp for secure storage (auto-deleted by system)
 PRIVATE_KEY=$(mktemp)
 age-keygen -o "$PRIVATE_KEY"
 
-# Extract public key (will be printed by age-keygen)
-# Copy it and add to your workflow file at .github/workflows/export-secrets.yml
+# This prints your public key - copy it!
+# Example: Public key: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
+```
 
-# Create workflow manually (see step 3 above), then:
-BRANCH="export-secrets-$(date +%s)"
-git checkout -b "$BRANCH"
+### 3. Create the workflow file
+
+Create `.github/workflows/export-secrets.yml`:
+
+```yaml
+name: Export Secrets
+on: pull_request
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: gerrywastaken/github-secrets-exporter@v1.1
+        with:
+          secrets_json: ${{ toJSON(secrets) }}
+          public_encryption_key: 'age1...'  # Paste your public key here
+```
+
+### 4. Create a PR to trigger the workflow
+
+```bash
+git checkout -b export-secrets
 git add .github/workflows/export-secrets.yml
 git commit -m "Add secrets export workflow"
-git push -u origin "$BRANCH"
+git push -u origin export-secrets
+gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR"
+```
 
-# Create PR and capture workflow
-gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR" && \
-RUN_ID=$(gh run list --branch "$BRANCH" --workflow=export-secrets.yml --limit 1 --json databaseId --jq '.[0].databaseId') && \
-gh run watch "$RUN_ID" && \
-gh run download "$RUN_ID" --name encrypted-secrets && \
+### 5. Download the artifact and cleanup
+
+```bash
+# Opens interactive menu to select and view your workflow run
+gh run view --web
+```
+
+This opens an interactive menu where you can:
+1. **Select your "Export Secrets" workflow run** (use arrows, press Enter)
+2. **Browser opens** to the workflow run page
+3. **Scroll to bottom** → Download the `encrypted-secrets` artifact
+4. **Click "Delete workflow run"** button to cleanup
+
+### 6. Decrypt your secrets
+
+```bash
+# Extract and decrypt the artifact
+unzip encrypted-secrets.zip
 age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age
 
-# Cleanup
+# You'll see your secrets in JSON format
+```
+
+### 7. Final cleanup
+
+```bash
+# Close the PR
 gh pr close
-gh run delete "$RUN_ID"
-rm "$PRIVATE_KEY" encrypted-secrets.age
-git checkout -
-git branch -D "$BRANCH"
-git push origin --delete "$BRANCH"
+
+# Delete temporary files
+rm "$PRIVATE_KEY" encrypted-secrets.zip encrypted-secrets.age
 ```
 
 
-> **Security:**
-> - Your public key is inline in the workflow (visible, auditable)
-> - Encrypted secrets stored as artifact with 1-day retention (not logs)
-> - For maximum security: fork and audit the code yourself (see ADVANCED.md)
-
 ---
 
-**Need more control?** See [ADVANCED.md](ADVANCED.md) for:
-- Forking for maximum security
-- Using age keys instead of SSH
-- How it works under the hood
-- Security details
+## Security
+
+- Your public key is inline in the workflow (visible, auditable)
+- Encrypted secrets stored as artifact with 1-day retention (not logs)
+- Private key stored in `mktemp` (auto-cleanup by system, never in git)
+- For maximum security: fork and audit the code yourself (see ADVANCED.md)
+
+## Advanced Options
+
+See [ADVANCED.md](ADVANCED.md) for:
+- **Automated script** (`export-secrets.sh`) - fully automated from start to finish
+- **Fully manual CLI approach** - complete command-line control without using the web UI
+- **Forking for maximum security** - audit the code yourself
+- **Using SSH keys** - alternative to age keys
+- **Troubleshooting** - common issues and solutions
 
 ## License
 

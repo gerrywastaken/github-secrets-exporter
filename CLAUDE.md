@@ -31,58 +31,33 @@ This action solves this by:
 
 ## Usage
 
-### Quick Start (Recommended)
+### Recommended Approach (Simple)
 
-Use the interactive script for the safest and easiest experience:
+1. Generate key with `mktemp` for security
+2. Create workflow file with public key
+3. Create PR to trigger workflow
+4. Use `gh run view --web` - opens interactive menu
+5. Select workflow, download artifact, delete run from web UI
+6. Decrypt locally and cleanup
 
-```bash
-./export-secrets.sh
-```
+See README.md for full step-by-step instructions.
 
-The script handles everything automatically:
-- Generates temporary age keypair (stored in `mktemp` directory)
-- Creates workflow file with your public key
-- Creates PR and waits for completion
-- Downloads and decrypts secrets
-- Cleans up all temporary files and artifacts
+**Why this approach:**
+- Simple: Just 7 straightforward steps
+- Safe: Uses `mktemp` for private key (never in working directory)
+- User-friendly: `gh run view --web` provides interactive menu
+- Clean: Web UI makes download/delete workflow runs easy
 
-### Manual Approach
+### Alternative Approaches
 
-If you prefer full control:
+**Automated script:** `export-secrets.sh` - handles everything automatically (see ADVANCED.md)
 
-```bash
-# 1. Generate keypair in temporary location
-PRIVATE_KEY=$(mktemp)
-age-keygen -o "$PRIVATE_KEY"
-# Note the public key printed
+**Fully manual CLI:** Complete command-line control without web UI (see ADVANCED.md)
 
-# 2. Create workflow with your public key
-# See README.md for workflow template
-
-# 3. Run the export process
-BRANCH="export-secrets-$(date +%s)"
-git checkout -b "$BRANCH"
-git add .github/workflows/export-secrets.yml
-git commit -m "Add secrets export workflow"
-git push -u origin "$BRANCH"
-
-# Create PR and get workflow run ID
-gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR"
-RUN_ID=$(gh run list --branch "$BRANCH" --workflow=export-secrets.yml --limit 1 --json databaseId --jq '.[0].databaseId')
-gh run watch "$RUN_ID"
-gh run download "$RUN_ID" --name encrypted-secrets
-age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age
-
-# 4. Cleanup
-gh pr close
-gh run delete "$RUN_ID"
-rm "$PRIVATE_KEY" encrypted-secrets.age
-git checkout - && git branch -D "$BRANCH"
-```
-
-**Key improvements over old approach:**
+**Key improvements from original approach:**
 - Uses `mktemp` for secure private key storage (never in working directory)
-- Targets specific workflow run by ID (avoids deleting wrong workflow)
+- Leverages `gh run view --web` interactive menu instead of complex commands
+- Targets specific workflow run by branch + name (avoids deleting wrong workflow)
 - Unique branch names prevent conflicts
 
 ### Customization
