@@ -76,9 +76,10 @@ gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR to expo
 gh run watch && \
 gh run download --name encrypted-secrets && \
 age --decrypt --identity private.key < encrypted-secrets.age && \
-gh pr close
+gh pr close && \
+gh run delete $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
 
-# Save the output somewhere secure, then cleanup:
+# Save the output somewhere secure, then cleanup local files:
 rm encrypted-secrets.age private.key
 ```
 
@@ -122,9 +123,9 @@ gh pr close
 # 2. Delete local files (after saving the decrypted secrets securely)
 rm encrypted-secrets.age private.key
 
-# 3. (Optional) Delete the workflow run to remove artifacts from GitHub
-# gh run list  # Find the run ID
-# gh run delete <run-id>
+# 3. Delete the workflow run and artifacts from GitHub
+gh run list --limit 1  # Get the most recent run ID
+gh run delete $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
 ```
 
 
