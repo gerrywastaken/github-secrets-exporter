@@ -143,6 +143,8 @@ Generally speaking: Anyone who can create/modify workflows in your repo can alre
 
 This export action just makes intentional export easier - it doesn't change the fundamental security model.
 
+But as long as you don't merge somebody's dodgy workflow, then they will only get a limited temporary github token made specficially for that workflow run by Github. See the real security test I ran here using an alt account as the attacker: https://github.com/gerrywastaken/github-secrets-exporter/pull/4
+
 ### "no identity matched any of the recipients" or "Failed to decrypt"
 
 The private key you're using doesn't match the public key used for encryption.
