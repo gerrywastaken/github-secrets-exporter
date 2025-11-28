@@ -66,9 +66,10 @@ gh pr create --title "DO NOT MERGE: Export secrets" --body "Temporary PR" && \
 gh run watch && \
 gh run download --name encrypted-secrets && \
 age --decrypt --identity private_age.txt < encrypted-secrets.age && \
-gh pr close
+gh pr close && \
+gh run delete $(gh run list --limit 1 --json databaseId --jq '.[0].databaseId')
 
-# Then cleanup: rm encrypted-secrets.age private_age.txt
+# Then cleanup local files: rm encrypted-secrets.age private_age.txt
 ```
 
 > **Note:** Chaining commands with `&&` prevents the "found no in progress runs to watch" error that occurs when running `gh run watch` separately.
