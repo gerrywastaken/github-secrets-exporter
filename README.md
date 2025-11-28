@@ -52,7 +52,8 @@ jobs:
         env:
           SECRETS_JSON: ${{ toJSON(secrets) }}
         with:
-          public_encryption_key: 'age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p'
+          # YOUR public key goes here
+          public_encryption_key: 'ageReallyLongStringOfNumbersAndLetters'
 ```
 
 Replace with your actual public key. It's public, so it's safe to commit!
@@ -62,6 +63,11 @@ Replace with your actual public key. It's public, so it's safe to commit!
 ### 4. Create PR and decrypt
 
 ```bash
+
+##################################
+# Kick off the artifact generation
+##################################
+
 # Create a branch with the workflow
 git checkout -b export-secrets
 git add .github/workflows/export-secrets.yml
@@ -71,17 +77,37 @@ git push -u origin export-secrets
 # Create PR (workflow runs automatically)
 gh pr create --title "Export secrets" --body "Temporary PR to export secrets"
 
+# Watch the workflow until the artifact is created
+gh run watch
+
+##################
+# Grab the secrets
+##################
+
 # Wait for workflow to complete, then download the artifact
 gh run download --name encrypted-secrets
 
-# Decrypt the secrets
-age --decrypt --identity ~/.ssh/id_ed25519 < encrypted-secrets.age
+# Decrypt the secrets and store the secrets somewhere secure
+age --decrypt --identity private.key < encrypted-secrets.age
 
-# Close the PR without merging
+# You'll see your secrets in JSON format.
+
+################
+# Do the cleanup
+################
+
+# 1. Close the PR to prevent it from being accidentally mered
 gh pr close
+
+# 2. delete the plaintext after you have stored the passwords
+# 3. Delete the encrypted file too as well as the the private key you
+# generated for this process, so it is never possible for somebody to steal
+# the key and encrypted file.
+
+# 3. Delete the workflow and thus the encrypted secrets
+gh run delete --name encrypted-secrets
 ```
 
-You'll see your secrets in JSON format.
 
 > **Security:**
 > - Your public key is inline in the workflow (visible, auditable)
