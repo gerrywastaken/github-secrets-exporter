@@ -49,7 +49,7 @@ jobs:
   export:
     runs-on: ubuntu-latest
     steps:
-      - uses: gerrywastaken/github-secrets-exporter@v1
+      - uses: gerrywastaken/github-secrets-exporter@v1.1
         with:
           secrets_json: ${{ toJSON(secrets) }}
           public_encryption_key: 'age1dp0rje7667cqhct9es3ap6ttq365nfk4u72vw5r4khv0lzppyv7qr3ttly'
