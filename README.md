@@ -72,9 +72,9 @@ gh run view --web
 ```
 
 This opens an interactive menu where you can:
-1. **Select your "Export Secrets" workflow run**
-2. **Browser opens** click summary and **Scroll to bottom**
-3. Download then delete `encrypted-secrets` artifact
+1. Select your "Export Secrets" workflow run
+2. Browser opens **click summary** and **Scroll to bottom**
+3. Download **then delete** the `encrypted-secrets` artifact
 
 ### 6. Decrypt your secrets
 
