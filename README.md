@@ -29,14 +29,12 @@ This action lets you export all secrets safely by encrypting them with your publ
 ### 2. Generate your encryption key
 
 ```bash
-# Use mktemp for secure storage (auto-deleted by system)
-TEMP_DIR=$(mktemp -d)
+TEMP_DIR=$(mktemp -d) # Use mktemp for secure storage (auto-deleted by system)
 PRIVATE_KEY="$TEMP_DIR/private.key"
 age-keygen -o "$PRIVATE_KEY"
-
+```
 # This prints your public key - copy it!
 # Example: Public key: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
-```
 
 ### 3. Create the workflow file
 
@@ -69,8 +67,8 @@ gh pr create --fill
 
 ### 5. Download and delete the encrypted artifact
 
+This opens an interactive menu to select and view your workflow run
 ```bash
-# Opens interactive menu to select and view your workflow run
 gh run view --web
 ```
 
@@ -81,26 +79,25 @@ This opens an interactive menu where you can:
 
 ### 6. Decrypt your secrets
 
+All sensitive data files live inside the temp dir so that it is easy to delete
+
 ```bash
-# Extract and decrypt the artifact
-pushd $TEMP_DIR
+pushd $TEMP_DIR # Move to the temp dir
 mv ~/Downloads/encrypted-secrets.zip $TEMP_DIR
 unzip encrypted-secrets.zip
 
-age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age
-# You'll see your secrets in JSON format 🎉
+echo "Your recovered secrets inside ${TEMP_DIR}/plaintext.json 🎉
+echo "Makesure to move them somewhere secure because we are about to delete this directory"
+age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age > plaintext.json
 
-popd # jumps back to the repo
+popd    # jumps back to the repo
 ```
 
 ### 7. Final cleanup
 
 ```bash
-# Close the PR and delete remote and local branch
-gh pr close -d export-secrets
-
-# Delete temporary files
-rm -rf "$TEMP_DIR"
+gh pr close -d export-secrets    # Closes the PR and delete remote and local branch
+rm -rf "$TEMP_DIR"               # Delete temporary files
 ```
 
 
