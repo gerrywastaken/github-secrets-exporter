@@ -92,7 +92,7 @@ echo -e "\n\n\n\n\nYour recovered secrets inside a plaintext file 🎉"
 echo "_______________________________________"
 echo "${TEMP_DIR}/plaintext.json"
 echo "_______________________________________"
-echo -e "Makesure to move them somewhere secure because\nwe are about to delete this directory! \n\n\n"
+echo -e "Make sure to move them somewhere secure because\nwe are about to delete this directory! \n\n\n"
 
 ```
 
