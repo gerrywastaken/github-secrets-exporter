@@ -111,10 +111,37 @@ echo "============================================="
 echo ""
 
 echo "Waiting for workflow to start..."
-sleep 2  # Give GitHub a moment to register the workflow
 
-# Watch the workflow for this specific PR
-if ! gh run watch; then
+# Wait for workflow run to appear (with retry)
+MAX_RETRIES=20
+RETRY_DELAY=3
+RUN_ID=""
+
+for i in $(seq 1 $MAX_RETRIES); do
+    RUN_ID=$(gh run list --branch "$BRANCH_NAME" --workflow=export-secrets.yml --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null || echo "")
+
+    if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+        echo "✓ Workflow run detected (ID: $RUN_ID)"
+        break
+    fi
+
+    if [ $i -eq $MAX_RETRIES ]; then
+        echo "Error: Workflow run not found after ${MAX_RETRIES} attempts ($(($MAX_RETRIES * $RETRY_DELAY))s)"
+        echo "This may indicate:"
+        echo "  - GitHub is experiencing delays"
+        echo "  - The workflow failed to trigger"
+        echo "  - There's an issue with the workflow file"
+        exit 1
+    fi
+
+    echo "Waiting for workflow to appear... (attempt $i/$MAX_RETRIES)"
+    sleep $RETRY_DELAY
+done
+
+echo ""
+
+# Watch the workflow
+if ! gh run watch "$RUN_ID"; then
     echo ""
     echo "Note: Workflow may have already completed."
     echo "Attempting to download artifact anyway..."
@@ -122,14 +149,6 @@ fi
 
 echo ""
 echo "Downloading encrypted secrets..."
-
-# Get the run ID from the most recent workflow run for this branch
-RUN_ID=$(gh run list --branch "$BRANCH_NAME" --workflow=export-secrets.yml --limit 1 --json databaseId --jq '.[0].databaseId')
-
-if [ -z "$RUN_ID" ]; then
-    echo "Error: Could not find workflow run"
-    exit 1
-fi
 
 # Download to temp directory
 cd "$TEMP_DIR"
