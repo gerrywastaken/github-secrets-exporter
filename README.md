@@ -89,10 +89,10 @@ age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age > plaintext.json
 popd    # jumps back to the repo
 
 echo -e "\n\n\n\n\nYour recovered secrets inside a plaintext file 🎉"
-echo "--------------------------"
+echo "_______________________________________"
 echo "${TEMP_DIR}/plaintext.json"
-echo "--------------------------"
-echo -e "Makesure to move them somewhere secure because\nwe are about to delete this directory!\n\n\n"
+echo "_______________________________________"
+echo -e "Makesure to move them somewhere secure because\nwe are about to delete this directory! \n\n\n"
 
 ```
 
