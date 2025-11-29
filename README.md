@@ -85,15 +85,15 @@ pushd $TEMP_DIR # Move to the temp dir
 mv ~/Downloads/encrypted-secrets.zip $TEMP_DIR
 unzip encrypted-secrets.zip
 
-echo "Your recovered secrets inside a plaintext file 🎉"
-echo "--------------------------------"
-exho "path: ${TEMP_DIR}/plaintext.json"
-echo "--------------------------------"
-echo "Makesure to move them somewhere secure because we are about to delete this directory"
-
 age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age > plaintext.json
-
 popd    # jumps back to the repo
+
+echo "\n\n\n\n\nYour recovered secrets inside a plaintext file 🎉"
+echo "--------------------------"
+exho "${TEMP_DIR}/plaintext.json"
+echo "--------------------------"
+echo "Makesure to move them somewhere secure because\nwe are about to delete this directory!\n\n\n"
+
 ```
 
 ### 7. Final cleanup
