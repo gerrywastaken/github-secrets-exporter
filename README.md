@@ -32,7 +32,8 @@ This action lets you export all secrets safely by encrypting them with your pers
 
 ```bash
 # Use mktemp for secure storage (auto-deleted by system)
-PRIVATE_KEY=$(mktemp)
+TEMP_DIR=$(mktemp -d)
+PRIVATE_KEY="$TEMP_DIR/private.key"
 age-keygen -o "$PRIVATE_KEY"
 
 # This prints your public key - copy it!
@@ -84,20 +85,24 @@ This opens an interactive menu where you can:
 
 ```bash
 # Extract and decrypt the artifact
+pushd $TEMP_DIR
+mv ~/Downloads/encrypted-secrets.zip $TEMP_DIR
 unzip encrypted-secrets.zip
-age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age
 
-# You'll see your secrets in JSON format
+age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age
+# You'll see your secrets in JSON format 🎉
+
+popd # jumps back to the repo
 ```
 
 ### 7. Final cleanup
 
 ```bash
-# Close the PR
-gh pr close
+# Close the PR and delete remote and local branch
+gh pr close -d export-secrets
 
 # Delete temporary files
-rm "$PRIVATE_KEY" encrypted-secrets.zip encrypted-secrets.age
+rm -rf "$TEMP_DIR"
 ```
 
 
@@ -108,16 +113,7 @@ rm "$PRIVATE_KEY" encrypted-secrets.zip encrypted-secrets.age
 - Your public key is inline in the workflow (visible, auditable)
 - Encrypted secrets stored as artifact with 1-day retention (not logs)
 - Private key stored in `mktemp` (auto-cleanup by system, never in git)
-- For maximum security: fork and audit the code yourself (see ADVANCED.md)
-
-## Advanced Options
-
-See [ADVANCED.md](ADVANCED.md) for:
-- **Automated script** (`export-secrets.sh`) - fully automated from start to finish
-- **Fully manual CLI approach** - complete command-line control without using the web UI
-- **Forking for maximum security** - audit the code yourself
-- **Using SSH keys** - alternative to age keys
-- **Troubleshooting** - common issues and solutions
+- See [ADVANCED.md](ADVANCED.md) for the paranoid version
 
 ## License
 
