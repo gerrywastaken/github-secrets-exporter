@@ -10,14 +10,12 @@ It is for temporary use only by repository OWNERS and by design does not and sho
 
 ## Why?
 
-GitHub Actions secrets are write-only by design. You can't read them through the UI or API. This makes it hard to:
+GitHub Actions secrets are write-only by design. You can't read them through the UI or API. This makes it hard do things like:
 
-- Migrate to a new secrets manager (Vault, Pulumi, etc.)
-- Move secrets between repositories
-- Back up secrets for disaster recovery
 - Audit what's currently set
+- Recover a secret if Github is your last hope
 
-This action lets you export all secrets safely by encrypting them with your personal key.
+This action lets you export all secrets safely by encrypting them with your public key.
 
 ## Quick Start
 
@@ -26,7 +24,7 @@ This action lets you export all secrets safely by encrypting them with your pers
 ### 1. Install dependencies
 
 - **[age](https://github.com/FiloSottile/age#installation)** (encryption tool)
-- **[gh](https://cli.github.com/)** (GitHub CLI)
+- **[gh](https://cli.github.com/)** (Optional, you can do things manually, but it helps)
 
 ### 2. Generate your encryption key
 
@@ -42,7 +40,8 @@ age-keygen -o "$PRIVATE_KEY"
 
 ### 3. Create the workflow file
 
-Create `.github/workflows/export-secrets.yml`:
+Create
+`.github/workflows/export-secrets.yml`:
 
 ```yaml
 name: Export Secrets
@@ -68,7 +67,7 @@ git push -u origin export-secrets
 gh pr create --fill
 ```
 
-### 5. Download the artifact and cleanup
+### 5. Download and delete the encrypted artifact
 
 ```bash
 # Opens interactive menu to select and view your workflow run
@@ -76,10 +75,9 @@ gh run view --web
 ```
 
 This opens an interactive menu where you can:
-1. **Select your "Export Secrets" workflow run** (use arrows, press Enter)
-2. **Browser opens** to the workflow run page
-3. **Scroll to bottom** → Download the `encrypted-secrets` artifact
-4. **Click "Delete workflow run"** button to cleanup
+1. **Select your "Export Secrets" workflow run**
+2. **Browser opens** click summary and **Scroll to bottom**
+3. Download then delete `encrypted-secrets` artifact
 
 ### 6. Decrypt your secrets
 
