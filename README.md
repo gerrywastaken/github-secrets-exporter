@@ -88,11 +88,11 @@ unzip encrypted-secrets.zip
 age --decrypt --identity "$PRIVATE_KEY" < encrypted-secrets.age > plaintext.json
 popd    # jumps back to the repo
 
-echo "\n\n\n\n\nYour recovered secrets inside a plaintext file 🎉"
-echo "--------------------------"
-exho "${TEMP_DIR}/plaintext.json"
-echo "--------------------------"
-echo "Makesure to move them somewhere secure because\nwe are about to delete this directory!\n\n\n"
+printf "\n\n\n\n\nYour recovered secrets inside a plaintext file 🎉"
+printf "--------------------------"
+printf "${TEMP_DIR}/plaintext.json"
+printf "--------------------------"
+printf "Makesure to move them somewhere secure because\nwe are about to delete this directory!\n\n\n"
 
 ```
 
