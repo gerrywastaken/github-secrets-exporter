@@ -33,13 +33,12 @@ TEMP_DIR=$(mktemp -d) # Use mktemp for secure storage (auto-deleted by system)
 PRIVATE_KEY="$TEMP_DIR/private.key"
 age-keygen -o "$PRIVATE_KEY"
 ```
-# This prints your public key - copy it!
-# Example: Public key: age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
+This prints your public key - (the `age1...` part). Add the *public key* to the workflow in the ext step!
 
 ### 3. Create the workflow file
 
-Create
-`.github/workflows/export-secrets.yml`:
+Create:  
+`.github/workflows/export-secrets.yml`
 
 ```yaml
 name: Export Secrets
@@ -52,7 +51,7 @@ jobs:
       - uses: gerrywastaken/github-secrets-exporter@v1.1
         with:
           secrets_json: ${{ toJSON(secrets) }}
-          public_encryption_key: 'age1...'  # Paste your public key here
+          public_encryption_key: '<age1...>'  # Paste your public key here
 ```
 
 ### 4. Create a PR to trigger the workflow
